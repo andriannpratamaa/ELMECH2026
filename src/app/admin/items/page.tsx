@@ -1,0 +1,267 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { Pencil, Trash2, Package } from "lucide-react";
+import { toast } from "sonner";
+import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import { CustomSelect } from "@/components/admin/CustomSelect";
+import DataTable from "@/components/admin/DataTable";
+import StatusBadge from "@/components/admin/StatusBadge";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { getItems, createItem, updateItem, deleteItem } from "@/services/items";
+import type { Item } from "@/types/admin";
+
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+}
+
+export default function ItemsPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [form, setForm] = useState({
+    nama_barang: "",
+    kode_barang: "",
+    kondisi: "baik",
+    status: "aktif",
+    pembuat_alat: "",
+    tanggal_pembelian: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await getItems();
+      setItems(d);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal memuat data item");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const stats = [
+    { label: "Total Item", value: items.length },
+    { label: "Item Aktif", value: items.filter((i) => i.status === "aktif").length },
+    { label: "Kondisi Baik", value: items.filter((i) => i.kondisi === "baik").length },
+    { label: "Kondisi Rusak", value: items.filter((i) => i.kondisi === "rusak_ringan" || i.kondisi === "rusak_berat").length },
+  ];
+
+  const openCreate = () => {
+    setEditItem(null);
+    setForm({
+      nama_barang: "",
+      kode_barang: "",
+      kondisi: "baik",
+      status: "aktif",
+      pembuat_alat: "",
+      tanggal_pembelian: "",
+    });
+    setErrors({});
+    setShowForm(true);
+  };
+
+  const openEdit = (item: Item) => {
+    setEditItem(item);
+    setForm({
+      nama_barang: item.nama_barang,
+      kode_barang: item.kode_barang || "",
+      kondisi: item.kondisi || "baik",
+      status: item.status || "aktif",
+      pembuat_alat: item.pembuat_alat || "",
+      tanggal_pembelian: item.tanggal_pembelian || "",
+    });
+    setErrors({});
+    setShowForm(true);
+  };
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.nama_barang.trim()) errs.nama_barang = "Nama barang wajib diisi";
+    if (!form.kode_barang.trim()) errs.kode_barang = "Kode barang wajib diisi";
+    if (!form.pembuat_alat.trim()) errs.pembuat_alat = "Pembuat alat wajib diisi";
+    if (!form.tanggal_pembelian.trim()) errs.tanggal_pembelian = "Tanggal pembelian wajib diisi";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+    setSaving(true);
+    const payload = {
+      nama_barang: form.nama_barang.trim(),
+      kode_barang: form.kode_barang.trim(),
+      kondisi: form.kondisi,
+      status: form.status,
+      pembuat_alat: form.pembuat_alat.trim(),
+      tanggal_pembelian: form.tanggal_pembelian,
+    };
+    try {
+      if (editItem) {
+        await updateItem(editItem.id, payload);
+        toast.success("Item berhasil diperbarui");
+      } else {
+        await createItem(payload);
+        toast.success("Item berhasil disimpan");
+      }
+      setShowForm(false);
+      fetch();
+    } catch (err: any) {
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(serverErrors))
+          mapped[key] = (msgs as string[])[0];
+        setErrors(mapped);
+      }
+      toast.error(err.response?.data?.message || "Gagal menyimpan item");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteItem(deleteId);
+      toast.success("Item berhasil dihapus");
+      setDeleteId(null);
+      fetch();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menghapus item");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const columns = [
+    { key: "nama_barang", header: "Nama Barang", render: (i: Item) => <span className="text-white font-medium">{i.nama_barang}</span> },
+    { key: "kode_barang", header: "Kode Barang", render: (i: Item) => <span className="text-white/50">{i.kode_barang || "—"}</span> },
+    { key: "kondisi", header: "Kondisi", render: (i: Item) => <StatusBadge status={i.kondisi || "—"} /> },
+    { key: "status", header: "Status", render: (i: Item) => <StatusBadge status={i.status || "—"} /> },
+    { key: "pembuat_alat", header: "Pembuat Alat", render: (i: Item) => <span className="text-white/50">{i.pembuat_alat || "—"}</span> },
+    { key: "tanggal_pembelian", header: "Tanggal Pembelian", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_pembelian)}</span> },
+    {
+      key: "actions", header: "Aksi",
+      render: (i: Item) => (
+        <div className="flex items-center gap-2">
+          <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-[#FBBF24] transition-colors"><Pencil className="w-4 h-4" /></button>
+          <button onClick={() => setDeleteId(i.id)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <AdminPageHeader title="Alat" description="Manajemen alat dan barang">
+        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FBBF24] text-[#0F172A] text-sm font-semibold hover:bg-[#FCD34D] transition-all hover:scale-[1.02] shadow-lg shadow-[#FBBF24]/20">
+          + Tambah Item
+        </button>
+      </AdminPageHeader>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
+            <p className="text-xs text-white/40 mb-1">{s.label}</p>
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-[#FBBF24]" strokeWidth={1.5} />
+              <span className="text-2xl font-bold text-white">{s.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={items}
+        searchKey="nama_barang"
+        searchPlaceholder="Cari barang..."
+        isLoading={loading}
+        emptyMessage="Belum ada item"
+      />
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => { if (!saving) { setShowForm(false); setErrors({}); } }}>
+          <div className="w-full max-w-md rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-white mb-4">{editItem ? "Edit Item" : "Tambah Item"}</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Nama Barang</label>
+                <input value={form.nama_barang} onChange={(e) => { setForm({ ...form, nama_barang: e.target.value }); if (errors.nama_barang) setErrors((prev) => { const n = { ...prev }; delete n.nama_barang; return n; }); }} placeholder="Contoh: MULTI GAS DETECTOR" className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
+                {errors.nama_barang && <p className="text-xs text-red-400 mt-1">{errors.nama_barang}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Kode Barang</label>
+                <input value={form.kode_barang} onChange={(e) => { setForm({ ...form, kode_barang: e.target.value }); if (errors.kode_barang) setErrors((prev) => { const n = { ...prev }; delete n.kode_barang; return n; }); }} placeholder="Contoh: FIS-007" className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
+                {errors.kode_barang && <p className="text-xs text-red-400 mt-1">{errors.kode_barang}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Pembuat Alat</label>
+                <input value={form.pembuat_alat} onChange={(e) => { setForm({ ...form, pembuat_alat: e.target.value }); if (errors.pembuat_alat) setErrors((prev) => { const n = { ...prev }; delete n.pembuat_alat; return n; }); }} placeholder="Contoh: zhafif" className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
+                {errors.pembuat_alat && <p className="text-xs text-red-400 mt-1">{errors.pembuat_alat}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Pembelian</label>
+                <input type="date" value={form.tanggal_pembelian} onChange={(e) => { setForm({ ...form, tanggal_pembelian: e.target.value }); if (errors.tanggal_pembelian) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_pembelian; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
+                {errors.tanggal_pembelian && <p className="text-xs text-red-400 mt-1">{errors.tanggal_pembelian}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Kondisi</label>
+                <CustomSelect
+                  value={form.kondisi}
+                  onChange={(v) => setForm({ ...form, kondisi: v })}
+                  options={[
+                    { value: "baik", label: "Baik" },
+                    { value: "rusak_ringan", label: "Rusak Ringan" },
+                    { value: "rusak_berat", label: "Rusak Berat" },
+                  ]}
+                  placeholder="Pilih Kondisi"
+                  showSearch={false}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Status</label>
+                <CustomSelect
+                  value={form.status}
+                  onChange={(v) => setForm({ ...form, status: v })}
+                  options={[
+                    { value: "aktif", label: "Aktif" },
+                    { value: "nonaktif", label: "Nonaktif" },
+                  ]}
+                  placeholder="Pilih Status"
+                  showSearch={false}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button onClick={() => { setShowForm(false); setErrors({}); }} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>
+              <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#FBBF24] text-[#0F172A] hover:bg-[#FCD34D] transition-all disabled:opacity-50">
+                {saving ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(o) => !o && setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Hapus Item"
+        description="Yakin ingin menghapus item ini?"
+        loading={deleteLoading}
+      />
+    </div>
+  );
+}

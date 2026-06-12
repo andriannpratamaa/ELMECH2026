@@ -1,0 +1,166 @@
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  nip?: string;
+  role: "admin" | "kalab";
+  password?: string;
+  laboratory_id?: number | null;
+  lab_name?: string;
+  created_at?: string;
+}
+
+export interface Lab {
+  id: number;
+  nama_lab: string;
+  lokasi?: string;
+  kalab_id?: number;
+  kalab_name?: string;
+  items_count?: number;
+  item_ids?: string;
+  items?: Item[];
+  created_at?: string;
+}
+
+export interface Item {
+  id: number;
+  nama_barang: string;
+  kode_barang?: string;
+  kondisi?: string;
+  status?: string;
+  pembuat_alat?: string;
+  tanggal_pembelian?: string;
+  categories?: CriteriaCategory[];
+  created_at?: string;
+}
+
+export interface Schedule {
+  id: number;
+  laboratory_id?: number;
+  lab_name?: string;
+  tanggal?: string;
+  keterangan?: string;
+  status?: string;
+  items_count?: number;
+  items?: Item[];
+  created_at?: string;
+}
+
+export interface Inspection {
+  id: number;
+  inspection_id?: number;
+  laboratory_id?: number;
+  lab_name?: string;
+  month?: number;
+  year?: number;
+  status?: string;
+  approval_status?: string;
+  created_at?: string;
+  tanggal_inspeksi?: string;
+  inspector_name?: string;
+  inspector_id?: number;
+  item_name?: string;
+  item_code?: string;
+  total_kategori?: number;
+  total_sub_item?: number;
+  jumlah_b?: number;
+  jumlah_k?: number;
+  foto_url?: string;
+  alasan_penolakan?: string;
+  catatan?: string;
+}
+
+export interface MonthlyGroup {
+  bulan_ke: number;
+  categories: {
+    category_id: number;
+    nama_kategori: string;
+    urutan?: number;
+    items: {
+      id: number;
+      subitem_id?: number;
+      nama_subitem: string;
+      status?: string;
+      keterangan?: string;
+      approval_status?: string;
+      alasan_penolakan?: string;
+    }[];
+  }[];
+  statistics?: {
+    total_items?: number;
+    baik?: number;
+    kurang?: number;
+    na?: number;
+    overall_status?: string;
+  };
+  review?: {
+    review_status?: string;
+    reviewed_by?: number | null;
+    reviewer_name?: string | null;
+    alasan_penolakan?: string | null;
+    reviewed_at?: string | null;
+  };
+}
+
+export interface InspectionDetail extends Inspection {
+  items?: InspectionItem[];
+  monthly_results?: MonthlyGroup[];
+}
+
+export interface InspectionItem {
+  id: number;
+  result_id?: number;
+  inspection_id?: number;
+  item_id?: number;
+  item_name?: string;
+  item_code?: string;
+  condition?: string;
+  status?: string;
+  notes?: string;
+  category_name?: string;
+  category_id?: number;
+}
+
+export interface CriteriaCategory {
+  id: number;
+  nama_kategori: string;
+  deskripsi?: string;
+  urutan?: number;
+  laboratory_id?: number;
+  laboratory?: Lab;
+  item_id?: number;
+  item_ids?: number[];
+  items?: Item[];
+  item_names?: string;
+  status?: string;
+  sub_items?: CriteriaSubItem[];
+  subitems?: CriteriaSubItem[];
+  created_at?: string;
+}
+
+export interface CriteriaSubItem {
+  id: number;
+  nama_subitem: string;
+  urutan?: number;
+  kategori_id?: number;
+  category_id?: number;
+  category_name?: string;
+  status?: string;
+  created_at?: string;
+}
+
+export interface Profile {
+  id: number;
+  name: string;
+  email: string;
+  nip?: string;
+  role: "admin" | "kalab";
+  laboratory_id?: number | null;
+  lab_name?: string;
+}
