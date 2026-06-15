@@ -154,28 +154,34 @@ export default function KalabItemInspectionPage() {
   };
 
   const updateCategoryName = (catIdx: number, val: string) => {
-    const next = [...categoryForms];
-    next[catIdx].nama_kategori = val;
-    setCategoryForms(next);
+    setCategoryForms((prev) => prev.map((cf, i) =>
+      i === catIdx ? { ...cf, nama_kategori: val } : cf
+    ));
   };
 
   const addSubItemField = (catIdx: number) => {
-    const next = [...categoryForms];
-    next[catIdx].sub_items = [...next[catIdx].sub_items, ""];
-    setCategoryForms(next);
+    setCategoryForms((prev) => prev.map((cf, i) =>
+      i === catIdx ? { ...cf, sub_items: [...cf.sub_items, ""] } : cf
+    ));
   };
 
   const updateSubItem = (catIdx: number, subIdx: number, val: string) => {
-    const next = [...categoryForms];
-    next[catIdx].sub_items[subIdx] = val;
-    setCategoryForms(next);
+    setCategoryForms((prev) => prev.map((cf, i) =>
+      i === catIdx
+        ? { ...cf, sub_items: cf.sub_items.map((s, j) => (j === subIdx ? val : s)) }
+        : cf
+    ));
   };
 
   const removeSubItem = (catIdx: number, subIdx: number) => {
-    const next = [...categoryForms];
-    if (next[catIdx].sub_items.length <= 1) return;
-    next[catIdx].sub_items = next[catIdx].sub_items.filter((_, i) => i !== subIdx);
-    setCategoryForms(next);
+    setCategoryForms((prev) => {
+      if (prev[catIdx].sub_items.length <= 1) return prev;
+      return prev.map((cf, i) =>
+        i === catIdx
+          ? { ...cf, sub_items: cf.sub_items.filter((_, j) => j !== subIdx) }
+          : cf
+      );
+    });
   };
 
   const handleStartEdit = (cat: CriteriaCategory) => {
@@ -285,7 +291,6 @@ export default function KalabItemInspectionPage() {
       setSelections({});
       setCatatan("");
       setFoto(null);
-      setRefreshKey((k) => k + 1);
       fetchData();
     } catch (err: any) {
       const errData = err.response?.data;

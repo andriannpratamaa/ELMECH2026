@@ -54,12 +54,6 @@ export default function LabsPage() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  useEffect(() => {
-    labs.forEach((lab) => {
-      console.log("Lab:", lab);
-    });
-  }, [labs]);
-
   const openCreate = () => {
     setEditLab(null);
     setForm({ nama_lab: "", lokasi: "", kalab_id: "" });
@@ -254,43 +248,7 @@ export default function LabsPage() {
                   searchPlaceholder="Cari kalab..."
                 />
               </div>
-<<<<<<< HEAD
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Daftar Item</label>
-                {items.length === 0 ? (
-                  <p className="text-xs text-white/30 py-3 text-center">Tidak ada item tersedia</p>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto content-scroll rounded-xl border border-white/10">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-white/5">
-                          <th className="w-10 py-2.5 px-3"></th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Nama Barang</th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Kode</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((item) => (
-                          <tr key={item.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] cursor-pointer" onClick={() => toggleItem(item.id)}>
-                            <td className="py-2.5 px-3">
-                              <input
-                                type="checkbox"
-                                checked={form.item_ids.includes(item.id)}
-                                onChange={() => toggleItem(item.id)}
-                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#FBBF24] focus:ring-[#FBBF24]/40 focus:ring-offset-0"
-                              />
-                            </td>
-                            <td className="py-2.5 px-3 text-white">{item.nama_barang}</td>
-                            <td className="py-2.5 px-3 text-white/50">{item.kode_barang || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-=======
->>>>>>> b987050b5d776c7dd75e9cb06afd57b43221e1cc
+
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button onClick={() => { setShowForm(false); setErrors({}); }} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>

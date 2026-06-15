@@ -61,8 +61,8 @@ export default function KalabItemsPage() {
   const stats = [
     { label: "Total Alat", value: items.length },
     { label: "Pembuat Alat", value: new Set(items.map((i) => i.pembuat_alat).filter(Boolean)).size },
-    { label: "Ada Inspeksi", value: items.filter((i) => i.inspection_count ?? 0 > 0).length },
-    { label: "Kriteria", value: items.filter((i) => (i as any).category_count ?? 0 > 0).length },
+    { label: "Ada Inspeksi", value: items.filter((i) => (i.inspection_count ?? 0) > 0).length },
+    { label: "Kriteria", value: items.filter((i) => (i.category_count ?? 0) > 0).length },
   ];
 
   const openCreate = () => {
@@ -136,7 +136,7 @@ export default function KalabItemsPage() {
         const currentIds = lab.item_ids ? lab.item_ids.split(",").map(Number).filter(Boolean) : [];
         const updatedIds = currentIds.filter((iid) => iid !== deleteId);
         if (updatedIds.length !== currentIds.length) {
-          const { default: { updateLab } } = await import("@/services/labs");
+          const { updateLab } = await import("@/services/labs");
           await updateLab(userLabId, {
             nama_lab: lab.nama_lab,
             lokasi: lab.lokasi || "",

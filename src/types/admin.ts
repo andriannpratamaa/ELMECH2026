@@ -35,6 +35,8 @@ export interface Item {
   pembuat_alat?: string;
   tanggal_pembelian?: string;
   categories?: CriteriaCategory[];
+  inspection_count?: number;
+  category_count?: number;
   created_at?: string;
 }
 
