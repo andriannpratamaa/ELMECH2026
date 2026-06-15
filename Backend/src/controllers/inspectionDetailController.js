@@ -1121,6 +1121,32 @@ const getResultsByStatus = async (req, res, next) => {
   }
 };
 
+const checkInspectionByItemId = async (req, res, next) => {
+  try {
+    const { item_id } = req.params;
+    const [rows] = await pool.query(
+      `SELECT i.id, imr.review_status, imr.alasan_penolakan,
+              EXISTS(SELECT 1 FROM inspection_monthly_reviews WHERE inspection_id = i.id AND review_status = 'APPROVED') as has_approved_month
+       FROM inspections i
+       LEFT JOIN inspection_monthly_reviews imr ON imr.inspection_id = i.id
+       WHERE i.item_id = ?
+       ORDER BY imr.bulan_ke DESC
+       LIMIT 1`,
+      [item_id]
+    );
+    res.status(200).json({
+      success: true,
+      exists: rows.length > 0,
+      inspection_id: rows.length > 0 ? rows[0].id : null,
+      review_status: rows.length > 0 ? rows[0].review_status : null,
+      alasan_penolakan: rows.length > 0 ? rows[0].alasan_penolakan : null,
+      has_approved_month: rows.length > 0 ? Boolean(rows[0].has_approved_month) : false
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createInspectionWithChecklist,
   getInspectionDetail,
@@ -1136,5 +1162,6 @@ module.exports = {
   bulkApproveResults,
   bulkRejectResults,
   getMyPendingInspections,
-  getResultsByStatus
+  getResultsByStatus,
+  checkInspectionByItemId
 };

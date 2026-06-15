@@ -179,7 +179,12 @@ export default function InspectionApprovalDashboard() {
         return;
       }
       const details = await fetchDetailsForList(list);
-      setter(details);
+      const seen = new Set<number>();
+      setter(details.filter((d) => {
+        if (seen.has(d.id)) return false;
+        seen.add(d.id);
+        return true;
+      }));
     } catch (err: any) {
       console.error(`[loadByStatus/${status}] error:`, err);
       setter([]);

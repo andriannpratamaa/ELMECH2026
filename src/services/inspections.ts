@@ -184,3 +184,21 @@ export async function exportAllInspections(): Promise<Blob> {
   const res = await api.get('/inspections/export-all', { responseType: 'blob' });
   return res.data;
 }
+
+export async function getInspectionByItemId(itemId: number): Promise<{
+  exists: boolean;
+  inspection_id: number | null;
+  review_status: string | null;
+  alasan_penolakan: string | null;
+  has_approved_month: boolean;
+}> {
+  const res = await api.get<{
+    success: boolean;
+    exists: boolean;
+    inspection_id: number | null;
+    review_status: string | null;
+    alasan_penolakan: string | null;
+    has_approved_month: boolean;
+  }>(`/inspections/by-item/${itemId}`);
+  return res.data;
+}

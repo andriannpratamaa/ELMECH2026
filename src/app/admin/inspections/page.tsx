@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, ClipboardCheck, PackageSearch, Upload, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +23,9 @@ const TABS: { key: PageTab; label: string; icon: typeof ClipboardCheck }[] = [
 
 export default function InspectionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pageTab, setPageTab] = useState<PageTab>("form");
+  const [initialized, setInitialized] = useState(false);
 
   // Form state
   const [labs, setLabs] = useState<Lab[]>([]);
@@ -39,10 +41,14 @@ export default function InspectionsPage() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [preselectLabId, setPreselectLabId] = useState<number | null>(null);
+  const [preselectItemId, setPreselectItemId] = useState<number | null>(null);
+
   const loadLabs = useCallback(async () => {
     setLoadingLabs(true);
     try {
-      setLabs(await getLabs());
+      const data = await getLabs();
+      setLabs(data);
     } catch {
       toast.error("Gagal memuat laboratorium");
     } finally {
@@ -51,6 +57,20 @@ export default function InspectionsPage() {
   }, []);
 
   useEffect(() => { loadLabs(); }, [loadLabs]);
+
+  useEffect(() => {
+    const labIdParam = searchParams.get("labId");
+    const itemIdParam = searchParams.get("itemId");
+    if (labIdParam && itemIdParam && labs.length > 0) {
+      const labId = Number(labIdParam);
+      const itemId = Number(itemIdParam);
+      if (labs.some((l) => l.id === labId)) {
+        setPreselectLabId(labId);
+        setPreselectItemId(itemId);
+        setSelectedLabId(labId);
+      }
+    }
+  }, [searchParams, labs]);
 
   useEffect(() => {
     if (!selectedLabId) {
@@ -64,15 +84,21 @@ export default function InspectionsPage() {
     }
     setLoadingItems(true);
     getItemsByLab(Number(selectedLabId))
-      .then(setLabItems)
+      .then((items) => {
+        setLabItems(items);
+        if (preselectItemId && items.some((i) => i.id === preselectItemId)) {
+          setSelectedAlatId(preselectItemId);
+          setPreselectItemId(null);
+        }
+      })
       .catch(() => toast.error("Gagal memuat alat"))
       .finally(() => setLoadingItems(false));
-    setSelectedAlatId("");
+    if (!preselectItemId) setSelectedAlatId("");
     setCategories([]);
     setSelections({});
     setCatatan("");
     setFoto(null);
-  }, [selectedLabId]);
+  }, [selectedLabId, preselectItemId]);
 
   const handleItemChange = async (itemId: number | "") => {
     setSelectedAlatId(itemId);
