@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Trash2, LayoutGrid, Table2, FlaskConical, User, Package, Eye } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -13,6 +14,7 @@ import { getItems } from "@/services/items";
 import type { Lab, User as UserType, Item } from "@/types/admin";
 
 export default function LabsPage() {
+  const router = useRouter();
   const [labs, setLabs] = useState<Lab[]>([]);
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [kalabUsers, setKalabUsers] = useState<UserType[]>([]);
@@ -26,8 +28,6 @@ export default function LabsPage() {
   const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", item_ids: [] as number[] });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [detailLab, setDetailLab] = useState<Lab | null>(null);
-  const [detailItems, setDetailItems] = useState<Item[]>([]);
 
   const usersMap = new Map<number, UserType>();
   allUsers.forEach((u) => usersMap.set(u.id, u));
@@ -86,8 +86,7 @@ export default function LabsPage() {
   };
 
   const openDetail = (lab: Lab) => {
-    setDetailLab(lab);
-    setDetailItems(lab.items || []);
+    router.push(`/admin/labs/${lab.id}`);
   };
 
   const toggleItem = (id: number) => {
@@ -230,7 +229,7 @@ export default function LabsPage() {
                   <td className="py-3 px-4"><span className="text-white/50">{lab.items?.length ?? 0}</span></td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openDetail(lab)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors" title="Detail">
+                      <button onClick={() => router.push(`/admin/labs/${lab.id}`)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors" title="Detail">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button onClick={() => openEdit(lab)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-[#FBBF24] transition-colors"><Pencil className="w-4 h-4" /></button>
@@ -241,40 +240,6 @@ export default function LabsPage() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {detailLab && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => setDetailLab(null)}>
-          <div className="w-full max-w-lg rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Detail Laboratorium</h2>
-              <button onClick={() => setDetailLab(null)} className="text-white/50 hover:text-white text-xl leading-none">&times;</button>
-            </div>
-            <div className="space-y-2 mb-4 pb-4 border-b border-white/10">
-              <div className="flex gap-2"><span className="text-xs text-white/40 w-28 shrink-0">Nama Lab</span><span className="text-sm text-white">{detailLab.nama_lab}</span></div>
-              <div className="flex gap-2"><span className="text-xs text-white/40 w-28 shrink-0">Lokasi</span><span className="text-sm text-white">{detailLab.lokasi || "—"}</span></div>
-              <div className="flex gap-2"><span className="text-xs text-white/40 w-28 shrink-0">Kalab</span><span className="text-sm text-white">{getKalabName(detailLab) || "—"}</span></div>
-              <div className="flex gap-2"><span className="text-xs text-white/40 w-28 shrink-0">Jumlah Alat</span><span className="text-sm text-white">{detailItems.length}</span></div>
-            </div>
-            <h3 className="text-sm font-semibold text-white mb-3">Daftar Item</h3>
-            {detailItems.length === 0 ? (
-              <p className="text-xs text-white/30 py-3 text-center">Belum ada item di laboratorium ini</p>
-            ) : (
-              <div className="space-y-2">
-                {detailItems.map((item) => (
-                  <div key={item.id} className="rounded-xl bg-white/5 border border-white/10 p-3">
-                    <p className="text-sm font-medium text-white">{item.nama_barang}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-white/50">
-                      {item.kode_barang && <span>Kode: {item.kode_barang}</span>}
-                      <span className="flex items-center gap-1">Kondisi: <StatusBadge status={item.kondisi || "—"} /></span>
-                      <span className="flex items-center gap-1">Status: <StatusBadge status={item.status || "—"} /></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 

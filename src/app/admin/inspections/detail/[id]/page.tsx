@@ -181,7 +181,8 @@ export default function InspectionDetailPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `inspeksi-${id}.xlsx`;
+      const fileName = `inspeksi-${(detail?.item_name || `inspection-${id}`).replace(/[\\/:*?"<>|]/g, "").trim()}.xlsx`;
+      a.download = fileName;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

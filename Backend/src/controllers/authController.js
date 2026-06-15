@@ -31,12 +31,14 @@ const login = async (req, res, next) => {
 
     // Ambil lab dari tabel laboratories tempat kalab ini terdaftar
     let laboratory_id = null;
+    let lab_name = null;
     if (user.role === 'kalab') {
       const [labs] = await pool.query(
-        'SELECT id FROM laboratories WHERE kalab_id = ?',
+        'SELECT id, nama_lab FROM laboratories WHERE kalab_id = ?',
         [user.id]
       );
       laboratory_id = labs.length > 0 ? labs[0].id : null;
+      lab_name = labs.length > 0 ? labs[0].nama_lab : null;
     }
 
     const token = jwt.sign(
@@ -46,7 +48,8 @@ const login = async (req, res, next) => {
         nip: user.nip,
         email: user.email,
         role: user.role,
-        laboratory_id
+        laboratory_id,
+        lab_name
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -62,7 +65,8 @@ const login = async (req, res, next) => {
           nip: user.nip,
           email: user.email,
           role: user.role,
-          laboratory_id
+          laboratory_id,
+          lab_name
         },
         token
       }
@@ -91,17 +95,19 @@ const getProfile = async (req, res, next) => {
     const user = users[0];
 
     let laboratory_id = null;
+    let lab_name = null;
     if (user.role === 'kalab') {
       const [labs] = await pool.query(
-        'SELECT id FROM laboratories WHERE kalab_id = ?',
+        'SELECT id, nama_lab FROM laboratories WHERE kalab_id = ?',
         [user.id]
       );
       laboratory_id = labs.length > 0 ? labs[0].id : null;
+      lab_name = labs.length > 0 ? labs[0].nama_lab : null;
     }
 
     res.status(200).json({
       success: true,
-      data: { ...user, laboratory_id }
+      data: { ...user, laboratory_id, lab_name }
     });
   } catch (err) {
     next(err);

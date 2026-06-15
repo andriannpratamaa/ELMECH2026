@@ -637,9 +637,9 @@ const getCategoriesByItemId = async (req, res, next) => {
     const { itemId } = req.params;
 
     const [categories] = await pool.query(
-      `SELECT id, nama_kategori, deskripsi, urutan, item_id
+      `SELECT id, nama_kategori, deskripsi, urutan, item_id, status
        FROM inspection_categories
-       WHERE item_id = ? AND status = 'APPROVED'
+       WHERE item_id = ?
        ORDER BY urutan ASC`,
       [itemId]
     );
@@ -649,7 +649,7 @@ const getCategoriesByItemId = async (req, res, next) => {
         const [subitems] = await pool.query(
           `SELECT id, nama_subitem, deskripsi, urutan
            FROM inspection_subitems
-           WHERE category_id = ? AND status = 'APPROVED'
+           WHERE category_id = ?
            ORDER BY urutan ASC`,
           [cat.id]
         );

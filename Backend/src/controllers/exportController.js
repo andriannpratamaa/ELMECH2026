@@ -146,29 +146,21 @@ const exportInspection = async (req, res, next) => {
       totalDataRowsNeeded += cat.subitems.size; 
     });
 
-    const availableRows = 31; // Baris 11 sampai 41 di template asli
+    const TEMPLATE_DATA_ROWS = 31; // Baris 11 sampai 41 di template
     
-    if (totalDataRowsNeeded > availableRows) {
-      const rowsToInsert = totalDataRowsNeeded - availableRows;
+    if (totalDataRowsNeeded < TEMPLATE_DATA_ROWS) {
+      const rowsToDelete = TEMPLATE_DATA_ROWS - totalDataRowsNeeded;
+      sheet.spliceRows(11 + totalDataRowsNeeded, rowsToDelete);
+    } else if (totalDataRowsNeeded > TEMPLATE_DATA_ROWS) {
+      const rowsToInsert = totalDataRowsNeeded - TEMPLATE_DATA_ROWS;
       for (let i = 0; i < rowsToInsert; i++) {
         sheet.insertRow(41, []);
-      }
-    } 
-    else if (totalDataRowsNeeded < availableRows) {
-      // Bersihkan sisa baris kosong bawaan template jika datanya sedikit
-      for (let r = 11 + totalDataRowsNeeded; r <= 41; r++) {
-        const rowToClean = sheet.getRow(r);
-        for (let c = 1; c <= 24; c++) {
-          const cell = rowToClean.getCell(c);
-          cell.value = null;
-          cell.fill = { type: 'pattern', pattern: 'none' };
-          cell.border = null;
-        }
       }
     }
 
     // 5. Inject Data Kategori dan Subitem ke Excel
-    for (let r = 11; r <= sheet.rowCount; r++) {
+    const lastFooterRow = 12 + totalDataRowsNeeded + 14; // NIP row
+    for (let r = 11; r <= Math.min(lastFooterRow, sheet.rowCount); r++) {
       try { sheet.unMergeCells(`A${r}:H${r}`); } catch(e) {}
       try { sheet.unMergeCells(`A${r}:X${r}`); } catch(e) {}
     }
@@ -249,22 +241,19 @@ sheet.mergeCells(`A${currentRowNum}:X${currentRowNum}`);
       }
     }
 
-    // 6. Hitung Posisi Akhir Tgl Inspeksi & Tanda Tangan
-    // Menghindari hardcoded baris 42 agar letak dinamis sesuai tinggi pergeseran data.
-    const baseFooterStart = (totalDataRowsNeeded > availableRows) ? (11 + totalDataRowsNeeded) : 42;
-
-    const tglInspeksiRow = baseFooterStart; 
+    // 6. Hitung Posisi Footer Dinamis
+    // Template asli: data rows 11-41, Tgl di row 43 (2 baris setelah data terakhir)
+    const tglInspeksiRow = 12 + totalDataRowsNeeded;
     const inspectorNameRow = tglInspeksiRow + 1;
-    
-// Hitung pergeseran footer jika data melebihi kapasitas template
-const rowOffset = Math.max(0, totalDataRowsNeeded - availableRows);
+    const keteranganRow = tglInspeksiRow + 2;
+    const legendRow1 = tglInspeksiRow + 3;   // B - Baik
+    const legendRow2 = tglInspeksiRow + 4;   // K - Kurang
+    const noteRow = tglInspeksiRow + 6;      // Berikan tanda check
+    const headerRow = tglInspeksiRow + 8;    // Kepala Lab / PLP 1 / PLP 2
+    const kalabNameRow = tglInspeksiRow + 13;
+    const kalabNipRow = tglInspeksiRow + 14;
 
-// Posisi asli pada template
-const kalabNameRow = 56 + rowOffset;
-const kalabNipRow = 57 + rowOffset;
-
-
-    // Bersihkan merge lama area tgl agar tulisan tidak bertumpuk ke kiri
+    // Bersihkan merge lama area footer
     try { sheet.unMergeCells(`A${tglInspeksiRow}:H${tglInspeksiRow}`); } catch(e){}
     try { sheet.unMergeCells(`A${inspectorNameRow}:H${inspectorNameRow}`); } catch(e){}
     sheet.mergeCells(`A${tglInspeksiRow}:H${tglInspeksiRow}`);
@@ -296,47 +285,21 @@ const kalabNipRow = 57 + rowOffset;
       sheet.getCell(10, c).border = bdr;
     }
 
-    // Hapus duplikat "Diinspeksi oleh" dari template
-    for (let r = inspectorNameRow + 1; r <= inspectorNameRow + 5; r++) {
-      for (let c = 1; c <= 8; c++) {
-        const cell = sheet.getCell(r, c);
-        if (typeof cell.value === 'string' && cell.value.includes('Diinspeksi')) {
-          cell.value = null;
-        }
-      }
-    }
-
-    // Tulis Nama & NIP Kepala Laboratorium secara presisi pada kolom tanda tangan bawaan template
+    // Tulis Nama & NIP Kepala Laboratorium
     if (inspection.penanggung_jawab) {
-  const nameCell = sheet.getCell(`A${kalabNameRow}`);
-
-  // Hapus isi lama
-  nameCell.value = '';
-
-  nameCell.value = inspection.penanggung_jawab;
-  nameCell.font = {
-    name: 'Calibri',
-    size: 11,
-    bold: true,
-    underline: true,
-    color: { argb: 'FF000000' }
-  };
-}
-
-if (inspection.nip) {
-  const nipCell = sheet.getCell(`A${kalabNipRow}`);
-
-  // Hapus isi lama
-  nipCell.value = '';
-
-  nipCell.value = `NIP. ${inspection.nip}`;
-  nipCell.font = {
-    name: 'Calibri',
-    size: 11,
-    bold: false,
-    color: { argb: 'FF000000' }
-  };
-}
+      const nameCell = sheet.getCell(`A${kalabNameRow}`);
+      nameCell.value = inspection.penanggung_jawab;
+      nameCell.font = {
+        name: 'Calibri', size: 11, bold: true, underline: true, color: { argb: 'FF000000' }
+      };
+    }
+    if (inspection.nip) {
+      const nipCell = sheet.getCell(`A${kalabNipRow}`);
+      nipCell.value = `NIP. ${inspection.nip}`;
+      nipCell.font = {
+        name: 'Calibri', size: 11, bold: false, color: { argb: 'FF000000' }
+      };
+    }
 
 
     // 7. Set Response Headers dan Kirim
@@ -453,10 +416,20 @@ const exportAllCompleted = async (req, res, next) => {
       { header: 'Tanggal Inspeksi', key: 'tanggal', width: 20 },
     ];
 
+    const thinBorder = {
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } },
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+
     const headerRow = ws.getRow(1);
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
-    headerRow.font = { bold: true, size: 12, name: 'Calibri', color: { argb: 'FFFFFFFF' } };
-    headerRow.alignment = { horizontal: 'center', vertical: 'center' };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+      cell.font = { bold: true, size: 12, name: 'Calibri', color: { argb: 'FFFFFFFF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'center' };
+      cell.border = thinBorder;
+    });
 
     let no = 1;
     for (const insp of inspections) {
@@ -470,12 +443,6 @@ const exportAllCompleted = async (req, res, next) => {
       });
     }
 
-    const thinBorder = {
-      left: { style: 'thin', color: { argb: 'FF000000' } },
-      right: { style: 'thin', color: { argb: 'FF000000' } },
-      top: { style: 'thin', color: { argb: 'FF000000' } },
-      bottom: { style: 'thin', color: { argb: 'FF000000' } }
-    };
     for (let r = 2; r <= inspections.length + 1; r++) {
       const row = ws.getRow(r);
       row.alignment = { horizontal: 'center', vertical: 'center' };
@@ -485,38 +452,6 @@ const exportAllCompleted = async (req, res, next) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="Rekap_Inspeksi_Lengkap.xlsx"');
 
-    const monthCells = [
-      'A6','B6','C6','D6','E6','F6',
-      'G6','H6','I6','J6','K6','L6'
-    ];
-
-    monthCells.forEach(addr => {
-      const cell = sheet.getCell(addr);
-
-      // Pertahankan style lama
-      cell.font = {
-        ...(cell.font || {}),
-        color: { argb: 'FF000000' }
-      };
-
-      // Optional: paksa background putih
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFFFFF' }
-      };
-    });
-
-    for (let col = 1; col <= 12; col++) {
-      const cell = sheet.getRow(6).getCell(col);
-
-      cell.font = {
-        ...(cell.font || {}),
-        color: { argb: 'FF000000' }
-      };
-    }
-
-  
     await wb.xlsx.write(res);
     res.end();
 

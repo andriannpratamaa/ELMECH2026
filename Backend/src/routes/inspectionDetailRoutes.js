@@ -107,6 +107,13 @@ router.put(
   inspectionDetailController.bulkRejectResults
 );
 
+// Check if inspection exists by item ID
+router.get(
+  '/by-item/:item_id',
+  verifyToken,
+  inspectionDetailController.checkInspectionByItemId
+);
+
 // ==================== KALAB DASHBOARD ====================
 
 // Get my pending/rejected inspections (kalab)

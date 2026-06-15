@@ -10,7 +10,7 @@ import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import {
   getPendingCategories, getPendingSubItems, getApprovedCriteria,
   createCategoryWithSubItems,
-  approveCategory, rejectCategory, approveSubItem, rejectSubItem,
+  rejectCategory, approveSubItem, rejectSubItem, bulkApproveCategories,
   deleteCategory, deleteSubItem,
 } from "@/services/criteria";
 import type { CriteriaCategory, CriteriaSubItem, Item, Lab } from "@/types/admin";
@@ -58,8 +58,8 @@ export default function CriteriaPage() {
 
   const handleApproveCategory = async (id: number) => {
     try {
-      await approveCategory(id);
-      toast.success("Kategori berhasil disetujui");
+      await bulkApproveCategories({ ids: [id] });
+      toast.success("Kategori dan sub item berhasil disetujui");
       fetchAll();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal menyetujui kategori");
