@@ -4,9 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Pencil, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { CustomSelect } from "@/components/admin/CustomSelect";
 import DataTable from "@/components/admin/DataTable";
-import StatusBadge from "@/components/admin/StatusBadge";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getItems, createItem, updateItem, deleteItem } from "@/services/items";
 import type { Item } from "@/types/admin";
@@ -27,8 +25,6 @@ export default function ItemsPage() {
   const [form, setForm] = useState({
     nama_barang: "",
     kode_barang: "",
-    kondisi: "baik",
-    status: "aktif",
     pembuat_alat: "",
     tanggal_pembelian: "",
   });
@@ -49,20 +45,11 @@ export default function ItemsPage() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const stats = [
-    { label: "Total Item", value: items.length },
-    { label: "Item Aktif", value: items.filter((i) => i.status === "aktif").length },
-    { label: "Kondisi Baik", value: items.filter((i) => i.kondisi === "baik").length },
-    { label: "Kondisi Rusak", value: items.filter((i) => i.kondisi === "rusak_ringan" || i.kondisi === "rusak_berat").length },
-  ];
-
   const openCreate = () => {
     setEditItem(null);
     setForm({
       nama_barang: "",
       kode_barang: "",
-      kondisi: "baik",
-      status: "aktif",
       pembuat_alat: "",
       tanggal_pembelian: "",
     });
@@ -75,8 +62,6 @@ export default function ItemsPage() {
     setForm({
       nama_barang: item.nama_barang,
       kode_barang: item.kode_barang || "",
-      kondisi: item.kondisi || "baik",
-      status: item.status || "aktif",
       pembuat_alat: item.pembuat_alat || "",
       tanggal_pembelian: item.tanggal_pembelian || "",
     });
@@ -100,8 +85,6 @@ export default function ItemsPage() {
     const payload = {
       nama_barang: form.nama_barang.trim(),
       kode_barang: form.kode_barang.trim(),
-      kondisi: form.kondisi,
-      status: form.status,
       pembuat_alat: form.pembuat_alat.trim(),
       tanggal_pembelian: form.tanggal_pembelian,
     };
@@ -147,8 +130,6 @@ export default function ItemsPage() {
   const columns = [
     { key: "nama_barang", header: "Nama Barang", render: (i: Item) => <span className="text-white font-medium">{i.nama_barang}</span> },
     { key: "kode_barang", header: "Kode Barang", render: (i: Item) => <span className="text-white/50">{i.kode_barang || "—"}</span> },
-    { key: "kondisi", header: "Kondisi", render: (i: Item) => <StatusBadge status={i.kondisi || "—"} /> },
-    { key: "status", header: "Status", render: (i: Item) => <StatusBadge status={i.status || "—"} /> },
     { key: "pembuat_alat", header: "Pembuat Alat", render: (i: Item) => <span className="text-white/50">{i.pembuat_alat || "—"}</span> },
     { key: "tanggal_pembelian", header: "Tanggal Pembelian", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_pembelian)}</span> },
     {
@@ -170,16 +151,14 @@ export default function ItemsPage() {
         </button>
       </AdminPageHeader>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
-            <p className="text-xs text-white/40 mb-1">{s.label}</p>
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#FBBF24]" strokeWidth={1.5} />
-              <span className="text-2xl font-bold text-white">{s.value}</span>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
+          <p className="text-xs text-white/40 mb-1">Total Item</p>
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-[#FBBF24]" strokeWidth={1.5} />
+            <span className="text-2xl font-bold text-white">{items.length}</span>
           </div>
-        ))}
+        </div>
       </div>
 
       <DataTable
@@ -215,33 +194,6 @@ export default function ItemsPage() {
                 <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Pembelian</label>
                 <input type="date" value={form.tanggal_pembelian} onChange={(e) => { setForm({ ...form, tanggal_pembelian: e.target.value }); if (errors.tanggal_pembelian) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_pembelian; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
                 {errors.tanggal_pembelian && <p className="text-xs text-red-400 mt-1">{errors.tanggal_pembelian}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Kondisi</label>
-                <CustomSelect
-                  value={form.kondisi}
-                  onChange={(v) => setForm({ ...form, kondisi: v })}
-                  options={[
-                    { value: "baik", label: "Baik" },
-                    { value: "rusak_ringan", label: "Rusak Ringan" },
-                    { value: "rusak_berat", label: "Rusak Berat" },
-                  ]}
-                  placeholder="Pilih Kondisi"
-                  showSearch={false}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Status</label>
-                <CustomSelect
-                  value={form.status}
-                  onChange={(v) => setForm({ ...form, status: v })}
-                  options={[
-                    { value: "aktif", label: "Aktif" },
-                    { value: "nonaktif", label: "Nonaktif" },
-                  ]}
-                  placeholder="Pilih Status"
-                  showSearch={false}
-                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

@@ -6,10 +6,9 @@ import { ArrowLeft, FlaskConical, MapPin, User, Package, Pencil, Trash2, Clipboa
 import { toast } from "sonner";
 import Link from "next/link";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { CustomSelect } from "@/components/admin/CustomSelect";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
-import { getLabs, updateLab } from "@/services/labs";
+import { getLabs } from "@/services/labs";
 import { getItemsByLab, createItem, updateItem, deleteItem } from "@/services/items";
 import type { Lab, Item } from "@/types/admin";
 
@@ -33,8 +32,6 @@ export default function LabDetailPage() {
   const [form, setForm] = useState({
     nama_barang: "",
     kode_barang: "",
-    kondisi: "baik",
-    status: "aktif",
     pembuat_alat: "",
     tanggal_pembelian: "",
   });
@@ -67,16 +64,9 @@ export default function LabDetailPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = [
-    { label: "Total Item", value: labItems.length },
-    { label: "Aktif", value: labItems.filter((i) => i.status === "aktif").length },
-    { label: "Kondisi Baik", value: labItems.filter((i) => i.kondisi === "baik").length },
-    { label: "Rusak", value: labItems.filter((i) => i.kondisi === "rusak_ringan" || i.kondisi === "rusak_berat").length },
-  ];
-
   const openCreate = () => {
     setEditItem(null);
-    setForm({ nama_barang: "", kode_barang: "", kondisi: "baik", status: "aktif", pembuat_alat: "", tanggal_pembelian: "" });
+    setForm({ nama_barang: "", kode_barang: "", pembuat_alat: "", tanggal_pembelian: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -86,8 +76,6 @@ export default function LabDetailPage() {
     setForm({
       nama_barang: item.nama_barang,
       kode_barang: item.kode_barang || "",
-      kondisi: item.kondisi || "baik",
-      status: item.status || "aktif",
       pembuat_alat: item.pembuat_alat || "",
       tanggal_pembelian: item.tanggal_pembelian || "",
     });
@@ -111,27 +99,16 @@ export default function LabDetailPage() {
     const payload = {
       nama_barang: form.nama_barang.trim(),
       kode_barang: form.kode_barang.trim(),
-      kondisi: form.kondisi,
-      status: form.status,
       pembuat_alat: form.pembuat_alat.trim(),
       tanggal_pembelian: form.tanggal_pembelian,
+      laboratory_id: id,
     };
     try {
       if (editItem) {
         await updateItem(editItem.id, payload);
         toast.success("Item berhasil diperbarui");
       } else {
-        const newItem = await createItem(payload);
-        const currentIds = lab?.item_ids ? lab.item_ids.split(",").map(Number).filter(Boolean) : [];
-        if (!currentIds.includes(newItem.id)) {
-          currentIds.push(newItem.id);
-          await updateLab(id, {
-            nama_lab: lab!.nama_lab,
-            lokasi: lab!.lokasi || "",
-            kalab_id: lab!.kalab_id,
-            item_ids: currentIds.join(","),
-          });
-        }
+        await createItem(payload);
         toast.success("Item berhasil disimpan");
       }
       setShowForm(false);
@@ -155,16 +132,6 @@ export default function LabDetailPage() {
     setDeleteLoading(true);
     try {
       await deleteItem(deleteId);
-      const currentIds = lab?.item_ids ? lab.item_ids.split(",").map(Number).filter(Boolean) : [];
-      const updatedIds = currentIds.filter((iid) => iid !== deleteId);
-      if (updatedIds.length !== currentIds.length) {
-        await updateLab(id, {
-          nama_lab: lab!.nama_lab,
-          lokasi: lab!.lokasi || "",
-          kalab_id: lab!.kalab_id,
-          item_ids: updatedIds.join(","),
-        });
-      }
       toast.success("Item berhasil dihapus");
       setDeleteId(null);
       fetchData();
@@ -255,16 +222,14 @@ export default function LabDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
-            <p className="text-xs text-white/40 mb-1">{s.label}</p>
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-[#FBBF24]" strokeWidth={1.5} />
-              <span className="text-2xl font-bold text-white">{s.value}</span>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
+          <p className="text-xs text-white/40 mb-1">Total Item</p>
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-[#FBBF24]" strokeWidth={1.5} />
+            <span className="text-2xl font-bold text-white">{labItems.length}</span>
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="flex justify-end">
@@ -306,33 +271,6 @@ export default function LabDetailPage() {
                 <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Pembelian</label>
                 <input type="date" value={form.tanggal_pembelian} onChange={(e) => { setForm({ ...form, tanggal_pembelian: e.target.value }); if (errors.tanggal_pembelian) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_pembelian; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
                 {errors.tanggal_pembelian && <p className="text-xs text-red-400 mt-1">{errors.tanggal_pembelian}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Kondisi</label>
-                <CustomSelect
-                  value={form.kondisi}
-                  onChange={(v) => setForm({ ...form, kondisi: v })}
-                  options={[
-                    { value: "baik", label: "Baik" },
-                    { value: "rusak_ringan", label: "Rusak Ringan" },
-                    { value: "rusak_berat", label: "Rusak Berat" },
-                  ]}
-                  placeholder="Pilih Kondisi"
-                  showSearch={false}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Status</label>
-                <CustomSelect
-                  value={form.status}
-                  onChange={(v) => setForm({ ...form, status: v })}
-                  options={[
-                    { value: "aktif", label: "Aktif" },
-                    { value: "nonaktif", label: "Nonaktif" },
-                  ]}
-                  placeholder="Pilih Status"
-                  showSearch={false}
-                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

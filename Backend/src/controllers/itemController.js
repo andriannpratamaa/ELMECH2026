@@ -108,7 +108,7 @@ const getMyItems = async (req, res, next) => {
 
 const createItem = async (req, res, next) => {
   try {
-    const { nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, kondisi, status } = req.body;
+    const { nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, laboratory_id } = req.body;
 
     if (!kode_barang) {
       return res.status(400).json({
@@ -117,23 +117,22 @@ const createItem = async (req, res, next) => {
       });
     }
 
-    const kondisiFinal = kondisi || 'baik';
-    const statusFinal = status || 'aktif';
     const [result] = await pool.query(
-      'INSERT INTO items (nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, kondisi, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisiFinal, statusFinal]
+      'INSERT INTO items (nama_barang, kode_barang, pembuat_alat, tanggal_pembelian) VALUES (?, ?, ?, ?)',
+      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null]
     );
 
     const newItemId = result.insertId;
 
-    // Otomatis tambahkan item ke lab kalab yang membuat
-    if (req.user.role === 'kalab' && req.user.laboratory_id) {
-      const [labs] = await pool.query('SELECT item_ids FROM laboratories WHERE id = ?', [req.user.laboratory_id]);
+    // Otomatis tambahkan item ke lab (prioritas dari body, fallback ke JWT)
+    const targetLabId = laboratory_id || req.user.laboratory_id;
+    if (targetLabId) {
+      const [labs] = await pool.query('SELECT item_ids FROM laboratories WHERE id = ?', [targetLabId]);
       if (labs.length > 0) {
         const currentIds = labs[0].item_ids ? labs[0].item_ids.split(',').map(Number).filter(Boolean) : [];
         if (!currentIds.includes(newItemId)) {
           currentIds.push(newItemId);
-          await pool.query('UPDATE laboratories SET item_ids = ? WHERE id = ?', [currentIds.join(','), req.user.laboratory_id]);
+          await pool.query('UPDATE laboratories SET item_ids = ? WHERE id = ?', [currentIds.join(','), targetLabId]);
         }
       }
     }
@@ -146,9 +145,7 @@ const createItem = async (req, res, next) => {
         nama_barang,
         kode_barang,
         pembuat_alat: pembuat_alat || null,
-        tanggal_pembelian: tanggal_pembelian || null,
-        kondisi: kondisiFinal,
-        status: statusFinal
+        tanggal_pembelian: tanggal_pembelian || null
       }
     });
   } catch (err) {
@@ -160,7 +157,7 @@ const createItem = async (req, res, next) => {
 const updateItem = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, kondisi, status } = req.body;
+    const { nama_barang, kode_barang, pembuat_alat, tanggal_pembelian } = req.body;
 
     // Check if item exists
     const [items] = await pool.query('SELECT id FROM items WHERE id = ?', [id]);
@@ -171,12 +168,10 @@ const updateItem = async (req, res, next) => {
       });
     }
 
-    const kondisiFinal = kondisi || 'baik';
-    const statusFinal = status || 'aktif';
     // Update item
     await pool.query(
-      'UPDATE items SET nama_barang = ?, kode_barang = ?, pembuat_alat = ?, tanggal_pembelian = ?, kondisi = ?, status = ? WHERE id = ?',
-      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisiFinal, statusFinal, id]
+      'UPDATE items SET nama_barang = ?, kode_barang = ?, pembuat_alat = ?, tanggal_pembelian = ? WHERE id = ?',
+      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, id]
     );
 
     res.status(200).json({

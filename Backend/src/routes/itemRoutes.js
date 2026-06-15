@@ -42,10 +42,10 @@ router.put('/:id',
   updateItem
 );
 
-// Delete item (admin only)
+// Delete item (admin & kalab)
 router.delete('/:id',
   verifyToken,
-  authorizeRole('admin'),
+  authorizeRole('admin', 'kalab'),
   deleteItem
 );
 

@@ -6,7 +6,6 @@ import { Pencil, Trash2, LayoutGrid, Table2, FlaskConical, User, Package, Eye } 
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { CustomSelect } from "@/components/admin/CustomSelect";
-import StatusBadge from "@/components/admin/StatusBadge";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, createLab, updateLab, deleteLab } from "@/services/labs";
 import { getUsers } from "@/services/users";
@@ -283,7 +282,6 @@ export default function LabsPage() {
                           <th className="w-10 py-2.5 px-3"></th>
                           <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Nama Barang</th>
                           <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Kode</th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Kondisi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -299,7 +297,6 @@ export default function LabsPage() {
                             </td>
                             <td className="py-2.5 px-3 text-white">{item.nama_barang}</td>
                             <td className="py-2.5 px-3 text-white/50">{item.kode_barang || "—"}</td>
-                            <td className="py-2.5 px-3"><span className="text-white/50">{item.kondisi || "—"}</span></td>
                           </tr>
                         ))}
                       </tbody>

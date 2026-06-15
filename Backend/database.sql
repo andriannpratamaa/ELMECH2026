@@ -36,12 +36,9 @@ CREATE TABLE IF NOT EXISTS items (
   kode_barang VARCHAR(100) NOT NULL UNIQUE,
   pembuat_alat VARCHAR(255),
   tanggal_pembelian DATE,
-  kondisi ENUM('baik', 'rusak_ringan', 'rusak_berat') NOT NULL DEFAULT 'baik',
-  status ENUM('aktif', 'nonaktif') NOT NULL DEFAULT 'aktif',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_kode_barang (kode_barang),
-  INDEX idx_kondisi (kondisi)
+  INDEX idx_kode_barang (kode_barang)
 );
 
 -- Inspections Table
@@ -211,10 +208,10 @@ CREATE TABLE IF NOT EXISTS inspection_monthly_reviews (
 );
 
 -- Insert sample items
-INSERT INTO items (nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, kondisi, status) VALUES
-('Mikroskop Optik', 'FIS-001', 'Zeiss', '2022-01-15', 'baik', 'aktif'),
-('Spektrofotometer', 'FIS-002', 'PerkinElmer', '2022-06-20', 'baik', 'aktif'),
-('Timbangan Analitik', 'KIM-001', 'OHAUS', '2021-03-10', 'rusak_ringan', 'aktif'),
-('Oven Laboratorium', 'KIM-002', 'Memmert', '2020-11-05', 'baik', 'aktif'),
-('Inkubator', 'BIO-001', 'Sheldon', '2022-05-12', 'baik', 'aktif'),
-('Centrifuge', 'BIO-002', 'Eppendorf', '2019-08-30', 'rusak_berat', 'nonaktif');
+INSERT INTO items (nama_barang, kode_barang, pembuat_alat, tanggal_pembelian) VALUES
+('Mikroskop Optik', 'FIS-001', 'Zeiss', '2022-01-15'),
+('Spektrofotometer', 'FIS-002', 'PerkinElmer', '2022-06-20'),
+('Timbangan Analitik', 'KIM-001', 'OHAUS', '2021-03-10'),
+('Oven Laboratorium', 'KIM-002', 'Memmert', '2020-11-05'),
+('Inkubator', 'BIO-001', 'Sheldon', '2022-05-12'),
+('Centrifuge', 'BIO-002', 'Eppendorf', '2019-08-30');

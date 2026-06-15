@@ -72,13 +72,6 @@ export default function KalabLabDetailPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = [
-    { label: "Total Item", value: labItems.length },
-    { label: "Aktif", value: labItems.filter((i) => i.status === "aktif").length },
-    { label: "Kondisi Baik", value: labItems.filter((i) => i.kondisi === "baik").length },
-    { label: "Rusak", value: labItems.filter((i) => i.kondisi === "rusak_ringan" || i.kondisi === "rusak_berat").length },
-  ];
-
   const openCreate = () => {
     setEditItem(null);
     setForm({ nama_barang: "", kode_barang: "", pembuat_alat: "", tanggal_pembelian: "" });
@@ -116,6 +109,7 @@ export default function KalabLabDetailPage() {
       kode_barang: form.kode_barang.trim(),
       pembuat_alat: form.pembuat_alat.trim(),
       tanggal_pembelian: form.tanggal_pembelian,
+      laboratory_id: id,
     };
     try {
       if (editItem) {
@@ -146,17 +140,6 @@ export default function KalabLabDetailPage() {
     setDeleteLoading(true);
     try {
       await deleteItem(deleteId);
-      const currentIds = lab?.item_ids ? lab.item_ids.split(",").map(Number).filter(Boolean) : [];
-      const updatedIds = currentIds.filter((iid) => iid !== deleteId);
-      if (updatedIds.length !== currentIds.length) {
-        const { default: { updateLab } } = await import("@/services/labs");
-        await updateLab(id, {
-          nama_lab: lab!.nama_lab,
-          lokasi: lab!.lokasi || "",
-          kalab_id: lab!.kalab_id,
-          item_ids: updatedIds.join(","),
-        });
-      }
       toast.success("Item berhasil dihapus");
       setDeleteId(null);
       fetchData();
@@ -247,16 +230,14 @@ export default function KalabLabDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
-            <p className="text-xs text-white/40 mb-1">{s.label}</p>
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-400" strokeWidth={1.5} />
-              <span className="text-2xl font-bold text-white">{s.value}</span>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
+          <p className="text-xs text-white/40 mb-1">Total Item</p>
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-blue-400" strokeWidth={1.5} />
+            <span className="text-2xl font-bold text-white">{labItems.length}</span>
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="flex justify-end">

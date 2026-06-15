@@ -32,8 +32,6 @@ export interface Item {
   id: number;
   nama_barang: string;
   kode_barang?: string;
-  kondisi?: string;
-  status?: string;
   pembuat_alat?: string;
   tanggal_pembelian?: string;
   categories?: CriteriaCategory[];

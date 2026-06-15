@@ -16,8 +16,8 @@ const getAllLaboratories = async (req, res, next) => {
       const ids = lab.item_ids ? lab.item_ids.split(',').map(Number) : [];
       if (ids.length > 0) {
         const [items] = await pool.query(
-          `SELECT id, nama_barang, kode_barang, kondisi, status
-           FROM items WHERE id IN (?) ORDER BY nama_barang`,
+          `SELECT id, nama_barang, kode_barang
+            FROM items WHERE id IN (?) ORDER BY nama_barang`,
           [ids]
         );
         lab.items = items;

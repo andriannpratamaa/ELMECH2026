@@ -31,8 +31,7 @@ const validateItem = [
   body('nama_barang').trim().notEmpty().withMessage('Nama barang harus diisi'),
   body('kode_barang').trim().notEmpty().withMessage('Kode barang harus diisi'),
   body('pembuat_alat').trim().optional(),
-  body('tanggal_pembelian').optional({ checkFalsy: true }).isDate().withMessage('Tanggal pembelian format tidak valid (YYYY-MM-DD)'),
-  body('kondisi').isIn(['baik', 'rusak_ringan', 'rusak_berat']).withMessage('Kondisi tidak valid')
+  body('tanggal_pembelian').optional({ checkFalsy: true }).isDate().withMessage('Tanggal pembelian format tidak valid (YYYY-MM-DD)')
 ];
 
 // Inspection Validations
