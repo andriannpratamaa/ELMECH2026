@@ -1,8 +1,17 @@
 import axios from 'axios';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_BASE,
 });
+
+export function fotoUrl(path?: string): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith('http')) return path;
+  const base = API_BASE.replace(/\/api$/, '');
+  return `${base}${path.startsWith('/') ? path : '/' + path}`;
+}
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {

@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { getInspectionDetail, approveResult, rejectResult, approveMonth, rejectMonth, exportInspection, deleteInspection } from "@/services/inspections";
+import { fotoUrl } from "@/lib/api";
 import type { InspectionDetail, InspectionItem } from "@/types/admin";
 
 function formatDateTime(dateStr?: string) {
@@ -266,6 +267,14 @@ export default function InspectionDetailPage() {
             <p className="text-xs text-[#FBBF24]/80"><span className="font-semibold text-[#FBBF24]">Catatan: </span>{detail.catatan}</p>
           </div>
         )}
+        {(() => {
+          const fUrl = fotoUrl(detail.foto_url);
+          return fUrl ? (
+            <div className="mt-4">
+              <img src={fUrl} alt="Foto inspeksi" className="max-w-xs max-h-48 rounded-xl border border-white/10 object-cover" />
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Monthly Results */}
