@@ -65,16 +65,16 @@ export async function approveCategory(id: number): Promise<void> {
   await api.put(`/criteria/category/${id}/approve`);
 }
 
-export async function rejectCategory(id: number): Promise<void> {
-  await api.put(`/criteria/category/${id}/reject`);
+export async function rejectCategory(id: number, alasan_penolakan?: string): Promise<void> {
+  await api.put(`/criteria/category/${id}/reject`, { alasan_penolakan });
 }
 
 export async function approveSubItem(id: number): Promise<void> {
   await api.put(`/criteria/subitem/${id}/approve`);
 }
 
-export async function rejectSubItem(id: number): Promise<void> {
-  await api.put(`/criteria/subitem/${id}/reject`);
+export async function rejectSubItem(id: number, alasan_penolakan?: string): Promise<void> {
+  await api.put(`/criteria/subitem/${id}/reject`, { alasan_penolakan });
 }
 
 export async function deleteCategory(id: number): Promise<void> {
@@ -93,17 +93,36 @@ export async function bulkRejectCategories(data: { ids: number[] }): Promise<voi
   await api.put('/criteria/categories/bulk-reject', data);
 }
 
-export async function updateCategory(id: number, data: { name: string }): Promise<CriteriaCategory> {
+export async function updateCategory(id: number, data: {
+  nama_kategori: string;
+  urutan?: number;
+  deskripsi?: string;
+}): Promise<CriteriaCategory> {
   const res = await api.put<ApiResponse<CriteriaCategory>>(`/criteria/category/${id}/update`, data);
   return res.data.data;
 }
 
-export async function updateSubItem(id: number, data: { name: string; category_id?: number }): Promise<CriteriaSubItem> {
+export async function updateSubItem(id: number, data: {
+  nama_subitem: string;
+  category_id: number;
+  urutan?: number;
+  deskripsi?: string;
+}): Promise<CriteriaSubItem> {
   const res = await api.put<ApiResponse<CriteriaSubItem>>(`/criteria/subitem/${id}/update`, data);
   return res.data.data;
 }
 
-export async function updateCategoryWithSubItems(id: number, data: { category_name?: string; sub_items?: string[] }): Promise<CriteriaCategory> {
+export async function updateCategoryWithSubItems(id: number, data: {
+  nama_kategori: string;
+  urutan?: number;
+  deskripsi?: string;
+  subitems: Array<{
+    id?: number;
+    nama_subitem: string;
+    urutan?: number;
+    deskripsi?: string;
+  }>;
+}): Promise<CriteriaCategory> {
   const res = await api.put<ApiResponse<CriteriaCategory>>(`/criteria/category-with-subitems/${id}/update`, data);
   return res.data.data;
 }

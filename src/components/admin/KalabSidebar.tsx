@@ -13,7 +13,7 @@ const MENU = [
     { href: "/kalab/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   ]},
   { section: "Operations", items: [
-    { href: "/kalab/items", icon: Package, label: "Alat Saya" },
+    { href: "/kalab/labs", icon: GraduationCap, label: "Lab Saya" },
   ]},
   { section: "Akun", items: [
     { href: "/kalab/profile", icon: UserCircle, label: "Profile" },

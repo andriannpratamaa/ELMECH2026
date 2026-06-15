@@ -139,6 +139,7 @@ export interface CriteriaCategory {
   items?: Item[];
   item_names?: string;
   status?: string;
+  alasan_penolakan?: string;
   sub_items?: CriteriaSubItem[];
   subitems?: CriteriaSubItem[];
   created_at?: string;
@@ -152,6 +153,7 @@ export interface CriteriaSubItem {
   category_id?: number;
   category_name?: string;
   status?: string;
+  alasan_penolakan?: string;
   created_at?: string;
 }
 

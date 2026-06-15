@@ -35,6 +35,9 @@ export default function CriteriaPage() {
   const [deletingCategory, setDeletingCategory] = useState(false);
   const [deleteSubItemId, setDeleteSubItemId] = useState<number | null>(null);
   const [deletingSubItem, setDeletingSubItem] = useState(false);
+  const [rejectCategoryId, setRejectCategoryId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -66,13 +69,19 @@ export default function CriteriaPage() {
     }
   };
 
-  const handleRejectCategory = async (id: number) => {
+  const handleRejectCategory = async () => {
+    if (!rejectCategoryId) return;
+    setRejecting(true);
     try {
-      await rejectCategory(id);
+      await rejectCategory(rejectCategoryId, rejectReason || undefined);
       toast.success("Kategori berhasil ditolak");
+      setRejectCategoryId(null);
+      setRejectReason("");
       fetchAll();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal menolak kategori");
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -164,7 +173,7 @@ export default function CriteriaPage() {
               pendingCategories={pendingCategories}
               pendingSubItems={pendingSubItems}
               onApproveCategory={handleApproveCategory}
-              onRejectCategory={handleRejectCategory}
+              onRejectCategory={(id) => { setRejectCategoryId(id); setRejectReason(""); }}
               onApproveSubItem={handleApproveSubItem}
               onRejectSubItem={handleRejectSubItem}
             />
@@ -176,6 +185,28 @@ export default function CriteriaPage() {
             />
           )}
         </>
+      )}
+
+      {rejectCategoryId !== null && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" onClick={() => !rejecting && setRejectCategoryId(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-white mb-2">Tolak Kategori</h2>
+            <p className="text-sm text-white/50 mb-4">Berikan alasan penolakan agar kalab bisa memperbaiki.</p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Alasan penolakan..."
+              rows={3}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none focus:outline-none focus:ring-2 focus:ring-red-400/40"
+            />
+            <div className="flex items-center justify-end gap-3 mt-4">
+              <button onClick={() => setRejectCategoryId(null)} disabled={rejecting} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>
+              <button onClick={handleRejectCategory} disabled={rejecting} className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all disabled:opacity-50">
+                {rejecting ? "Menolak..." : rejectReason.trim() ? "Tolak dengan Alasan" : "Tolak (tanpa alasan)"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ConfirmDialog
