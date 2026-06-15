@@ -10,22 +10,20 @@ import StatusBadge from "@/components/admin/StatusBadge";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, createLab, updateLab, deleteLab } from "@/services/labs";
 import { getUsers } from "@/services/users";
-import { getItems } from "@/services/items";
-import type { Lab, User as UserType, Item } from "@/types/admin";
+import type { Lab, User as UserType } from "@/types/admin";
 
 export default function LabsPage() {
   const router = useRouter();
   const [labs, setLabs] = useState<Lab[]>([]);
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [kalabUsers, setKalabUsers] = useState<UserType[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showForm, setShowForm] = useState(false);
   const [editLab, setEditLab] = useState<Lab | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", item_ids: [] as number[] });
+  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -41,15 +39,13 @@ export default function LabsPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [labData, userData, itemData] = await Promise.all([
+      const [labData, userData] = await Promise.all([
         getLabs(),
         getUsers(),
-        getItems(),
       ]);
       setLabs(labData);
       setAllUsers(userData);
       setKalabUsers(userData.filter((u) => u.role === "kalab"));
-      setItems(itemData);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal memuat data");
     } finally {
@@ -62,13 +58,12 @@ export default function LabsPage() {
   useEffect(() => {
     labs.forEach((lab) => {
       console.log("Lab:", lab);
-      console.log("Item count:", lab.items?.length ?? 0);
     });
   }, [labs]);
 
   const openCreate = () => {
     setEditLab(null);
-    setForm({ nama_lab: "", lokasi: "", kalab_id: "", item_ids: [] });
+    setForm({ nama_lab: "", lokasi: "", kalab_id: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -79,7 +74,6 @@ export default function LabsPage() {
       nama_lab: l.nama_lab,
       lokasi: l.lokasi || "",
       kalab_id: l.kalab_id?.toString() || "",
-      item_ids: l.item_ids ? l.item_ids.split(",").map(Number) : [],
     });
     setErrors({});
     setShowForm(true);
@@ -87,15 +81,6 @@ export default function LabsPage() {
 
   const openDetail = (lab: Lab) => {
     router.push(`/admin/labs/${lab.id}`);
-  };
-
-  const toggleItem = (id: number) => {
-    setForm((prev) => ({
-      ...prev,
-      item_ids: prev.item_ids.includes(id)
-        ? prev.item_ids.filter((i) => i !== id)
-        : [...prev.item_ids, id],
-    }));
   };
 
   const validate = () => {
@@ -112,7 +97,6 @@ export default function LabsPage() {
       nama_lab: form.nama_lab.trim(),
       lokasi: form.lokasi.trim(),
       kalab_id: form.kalab_id ? Number(form.kalab_id) : undefined,
-      item_ids: form.item_ids.join(","),
     };
     try {
       if (editLab) {
@@ -270,42 +254,6 @@ export default function LabsPage() {
                   showSearch={kalabUsers.length > 5}
                   searchPlaceholder="Cari kalab..."
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Daftar Item</label>
-                {items.length === 0 ? (
-                  <p className="text-xs text-white/30 py-3 text-center">Tidak ada item tersedia</p>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto content-scroll rounded-xl border border-white/10">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-white/5">
-                          <th className="w-10 py-2.5 px-3"></th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Nama Barang</th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Kode</th>
-                          <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2.5 px-3">Kondisi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((item) => (
-                          <tr key={item.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] cursor-pointer" onClick={() => toggleItem(item.id)}>
-                            <td className="py-2.5 px-3">
-                              <input
-                                type="checkbox"
-                                checked={form.item_ids.includes(item.id)}
-                                onChange={() => toggleItem(item.id)}
-                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#FBBF24] focus:ring-[#FBBF24]/40 focus:ring-offset-0"
-                              />
-                            </td>
-                            <td className="py-2.5 px-3 text-white">{item.nama_barang}</td>
-                            <td className="py-2.5 px-3 text-white/50">{item.kode_barang || "—"}</td>
-                            <td className="py-2.5 px-3"><span className="text-white/50">{item.kondisi || "—"}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

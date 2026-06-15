@@ -52,8 +52,8 @@ const createInspectionWithChecklist = async (req, res, next) => {
     // Check if any category is PENDING or REJECTED
     const [nonApprovedCategories] = await pool.query(
       `SELECT COUNT(*) as count FROM inspection_categories
-       WHERE laboratory_id = ? AND status IN ('PENDING', 'REJECTED')`,
-      [laboratory_id]
+       WHERE item_id = ? AND status IN ('PENDING', 'REJECTED')`,
+      [item_id]
     );
     if (Number(nonApprovedCategories[0].count) > 0) {
       if (req.file) fs.unlinkSync(req.file.path);

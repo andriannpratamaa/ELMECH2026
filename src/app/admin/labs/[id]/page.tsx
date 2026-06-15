@@ -6,7 +6,6 @@ import { ArrowLeft, FlaskConical, MapPin, User, Package, Pencil, Trash2, Clipboa
 import { toast } from "sonner";
 import Link from "next/link";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
-import { CustomSelect } from "@/components/admin/CustomSelect";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, updateLab } from "@/services/labs";
@@ -33,8 +32,6 @@ export default function LabDetailPage() {
   const [form, setForm] = useState({
     nama_barang: "",
     kode_barang: "",
-    kondisi: "baik",
-    status: "aktif",
     pembuat_alat: "",
     tanggal_pembelian: "",
   });
@@ -76,7 +73,7 @@ export default function LabDetailPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ nama_barang: "", kode_barang: "", kondisi: "baik", status: "aktif", pembuat_alat: "", tanggal_pembelian: "" });
+    setForm({ nama_barang: "", kode_barang: "", pembuat_alat: "", tanggal_pembelian: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -86,8 +83,6 @@ export default function LabDetailPage() {
     setForm({
       nama_barang: item.nama_barang,
       kode_barang: item.kode_barang || "",
-      kondisi: item.kondisi || "baik",
-      status: item.status || "aktif",
       pembuat_alat: item.pembuat_alat || "",
       tanggal_pembelian: item.tanggal_pembelian || "",
     });
@@ -111,8 +106,6 @@ export default function LabDetailPage() {
     const payload = {
       nama_barang: form.nama_barang.trim(),
       kode_barang: form.kode_barang.trim(),
-      kondisi: form.kondisi,
-      status: form.status,
       pembuat_alat: form.pembuat_alat.trim(),
       tanggal_pembelian: form.tanggal_pembelian,
     };
@@ -306,33 +299,6 @@ export default function LabDetailPage() {
                 <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Pembelian</label>
                 <input type="date" value={form.tanggal_pembelian} onChange={(e) => { setForm({ ...form, tanggal_pembelian: e.target.value }); if (errors.tanggal_pembelian) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_pembelian; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
                 {errors.tanggal_pembelian && <p className="text-xs text-red-400 mt-1">{errors.tanggal_pembelian}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Kondisi</label>
-                <CustomSelect
-                  value={form.kondisi}
-                  onChange={(v) => setForm({ ...form, kondisi: v })}
-                  options={[
-                    { value: "baik", label: "Baik" },
-                    { value: "rusak_ringan", label: "Rusak Ringan" },
-                    { value: "rusak_berat", label: "Rusak Berat" },
-                  ]}
-                  placeholder="Pilih Kondisi"
-                  showSearch={false}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Status</label>
-                <CustomSelect
-                  value={form.status}
-                  onChange={(v) => setForm({ ...form, status: v })}
-                  options={[
-                    { value: "aktif", label: "Aktif" },
-                    { value: "nonaktif", label: "Nonaktif" },
-                  ]}
-                  placeholder="Pilih Status"
-                  showSearch={false}
-                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

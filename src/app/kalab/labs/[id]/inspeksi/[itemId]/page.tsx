@@ -708,7 +708,7 @@ export default function KalabItemInspectionPage() {
                 <div key={catIdx} className="rounded-xl bg-white/5 border border-white/10 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">Kategori {catIdx + 1}</span>
-                    {categoryForms.length > 1 && (
+                    {categoryForms.length > 1 && !editCategory && (
                       <button onClick={() => removeCategoryForm(catIdx)} className="text-xs text-red-400 hover:text-red-300 transition-colors">Hapus</button>
                     )}
                   </div>
@@ -738,30 +738,34 @@ export default function KalabItemInspectionPage() {
                 </div>
               ))}
 
-              <button
-                onClick={addCategoryForm}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-white/10 text-white/50 text-sm font-medium hover:border-blue-400/40 hover:text-blue-400 transition-all"
-              >
-                <Plus className="w-4 h-4" /> Tambah Kategori Lagi
-              </button>
-
-              {editCategory && (
+              {!editCategory && (
                 <button
-                  onClick={handleCancelEdit}
-                  disabled={savingCat}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+                  onClick={addCategoryForm}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-white/10 text-white/50 text-sm font-medium hover:border-blue-400/40 hover:text-blue-400 transition-all"
                 >
-                  Batal Edit
+                  <Plus className="w-4 h-4" /> Tambah Kategori Lagi
                 </button>
               )}
-              <button
-                onClick={handleSaveCategory}
-                disabled={savingCat}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {savingCat ? "Menyimpan..." : editCategory ? "Update Kategori" : "Simpan Semua Kategori"}
-              </button>
+
+              <div className="flex items-center gap-2">
+                {editCategory && (
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={savingCat}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+                  >
+                    Batal Edit
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveCategory}
+                  disabled={savingCat}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingCat ? "Menyimpan..." : editCategory ? "Update Kategori" : "Simpan Semua Kategori"}
+                </button>
+              </div>
             </div>
           )}
         </div>
