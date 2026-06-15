@@ -17,6 +17,7 @@ import {
   bulkRejectResults,
   getInspectionDetail,
 } from "@/services/inspections";
+import { fotoUrl } from "@/lib/api";
 import type { Inspection, InspectionDetail, InspectionItem, Lab } from "@/types/admin";
 
 type TabType = "pending" | "approved" | "rejected";
@@ -566,15 +567,14 @@ export default function InspectionApprovalDashboard() {
                     )}
 
                     {/* Foto */}
-                    {d.foto_url && (
-                      <div className="mb-3">
-                        <img
-                          src={d.foto_url}
-                          alt="Foto inspeksi"
-                          className="w-32 h-24 object-cover rounded-xl border border-white/10"
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      const fUrl = fotoUrl(d.foto_url);
+                      return fUrl ? (
+                        <div className="mb-3">
+                          <img src={fUrl} alt="Foto inspeksi" className="w-32 h-24 object-cover rounded-xl border border-white/10" />
+                        </div>
+                      ) : null;
+                    })()}
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 pt-2 border-t border-white/5">
@@ -742,19 +742,18 @@ export default function InspectionApprovalDashboard() {
                     )}
 
                     {/* Foto */}
-                    {detailData.foto_url && (
-                      <div>
-                        <h5 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          Foto
-                        </h5>
-                        <img
-                          src={detailData.foto_url}
-                          alt="Foto inspeksi"
-                          className="max-w-full max-h-80 rounded-xl border border-white/10 object-cover"
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      const fUrl = fotoUrl(detailData.foto_url);
+                      return fUrl ? (
+                        <div>
+                          <h5 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            Foto
+                          </h5>
+                          <img src={fUrl} alt="Foto inspeksi" className="max-w-full max-h-80 rounded-xl border border-white/10 object-cover" />
+                        </div>
+                      ) : null;
+                    })()}
 
                     {/* Alasan Penolakan */}
                     {detailData.alasan_penolakan && (

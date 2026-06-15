@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { getInspectionDetail, approveResult, rejectResult, approveMonth, rejectMonth, exportInspection, deleteInspection } from "@/services/inspections";
+import { getInspectionDetail, approveResult, rejectResult, approveMonth, rejectMonth, exportInspection, deleteInspection, bulkApproveResults, bulkRejectResults } from "@/services/inspections";
+import { fotoUrl } from "@/lib/api";
 import type { InspectionDetail, InspectionItem } from "@/types/admin";
 
 function formatDateTime(dateStr?: string) {
@@ -46,6 +47,9 @@ export default function InspectionDetailPage() {
   const [rejectingItem, setRejectingItem] = useState<number | null>(null);
   const [rejectItemReason, setRejectItemReason] = useState("");
   const [rejectItemTarget, setRejectItemTarget] = useState<number | null>(null);
+  const [approvingCategory, setApprovingCategory] = useState<string | null>(null);
+  const [rejectCategoryTarget, setRejectCategoryTarget] = useState<{ bulan: number; name: string; ids: number[] } | null>(null);
+  const [rejectCategoryReason, setRejectCategoryReason] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -127,6 +131,32 @@ export default function InspectionDetailPage() {
       toast.error(err.response?.data?.message || "Gagal menolak item");
     } finally {
       setRejectingItem(null);
+    }
+  };
+
+  const handleApproveCategory = async (bulan: number, catName: string, ids: number[]) => {
+    setApprovingCategory(catName);
+    try {
+      await bulkApproveResults({ ids });
+      toast.success(`Kategori "${catName}" berhasil disetujui`);
+      fetch();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menyetujui kategori");
+    } finally {
+      setApprovingCategory(null);
+    }
+  };
+
+  const handleRejectCategory = async () => {
+    if (!rejectCategoryTarget) return;
+    try {
+      await bulkRejectResults({ ids: rejectCategoryTarget.ids, alasan_penolakan: rejectCategoryReason });
+      toast.success(`Kategori "${rejectCategoryTarget.name}" berhasil ditolak`);
+      setRejectCategoryTarget(null);
+      setRejectCategoryReason("");
+      fetch();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menolak kategori");
     }
   };
 
@@ -267,6 +297,14 @@ export default function InspectionDetailPage() {
             <p className="text-xs text-[#FBBF24]/80"><span className="font-semibold text-[#FBBF24]">Catatan: </span>{detail.catatan}</p>
           </div>
         )}
+        {(() => {
+          const fUrl = fotoUrl(detail.foto_url);
+          return fUrl ? (
+            <div className="mt-4">
+              <img src={fUrl} alt="Foto inspeksi" className="max-w-xs max-h-48 rounded-xl border border-white/10 object-cover" />
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Monthly Results */}
@@ -325,65 +363,110 @@ export default function InspectionDetailPage() {
               </div>
             </div>
 
-            {/* Items Table */}
+            {/* Category Groups */}
             {items.length === 0 ? (
               <div className="p-6 text-center text-sm text-white/30">Tidak ada item</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/5">
-                      <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Kategori</th>
-                      <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Sub Item</th>
-                      <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4 w-16">Status</th>
-                      <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4 w-28">Review</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item) => {
-                      const rid = item.result_id ?? item.id;
-                      const ic = itemCondition(item);
-                      const isB = ic === "B";
-                      const isItemApproving = approvingItem === rid;
-                      const isItemRejecting = rejectingItem === rid;
-                      return (
-                        <tr key={rid} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
-                          <td className="py-3 px-4 text-xs text-white/40">{item.category_name || "—"}</td>
-                          <td className="py-3 px-4 text-sm text-white">{item.item_name || "—"}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${
-                              isB ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
-                            }`}>
-                              {isB ? "B" : ic === "K" ? "K" : ic || "—"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {!isApproved && (
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() => handleApproveItem(rid)}
-                                  disabled={isItemApproving || isItemRejecting}
-                                  className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 transition-all disabled:opacity-40"
-                                  title="Setujui item"
-                                >
-                                  {isItemApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                                </button>
-                                <button
-                                  onClick={() => { setRejectItemTarget(rid); setRejectItemReason(""); }}
-                                  disabled={isItemApproving || isItemRejecting}
-                                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all disabled:opacity-40"
-                                  title="Tolak item"
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="divide-y divide-white/5">
+                {(() => {
+                  const groups: Record<string, InspectionItem[]> = {};
+                  for (const item of items) {
+                    const key = item.category_name || "Tanpa Kategori";
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(item);
+                  }
+                  return Object.entries(groups).map(([catName, catItems]) => {
+                    const catResultIds = catItems.map((i) => i.result_id ?? i.id);
+                    const isCatApproving = approvingCategory === catName;
+                    const bCount = countByCondition(catItems, "B");
+                    const kCount = countByCondition(catItems, "K");
+                    return (
+                      <div key={catName}>
+                        {/* Category Header */}
+                        <div className="px-4 py-2.5 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-white">{catName}</span>
+                            <span className="text-[11px] text-white/30">{bCount}B / {kCount}K</span>
+                          </div>
+                          {!isApproved && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleApproveCategory(bulan_ke, catName, catResultIds)}
+                                disabled={isCatApproving}
+                                className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 transition-all disabled:opacity-40"
+                                title="Setujui kategori"
+                              >
+                                {isCatApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                onClick={() => setRejectCategoryTarget({ bulan: bulan_ke, name: catName, ids: catResultIds })}
+                                className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all"
+                                title="Tolak kategori"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {/* Category Items */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-white/5">
+                                <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4">Sub Item</th>
+                                <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4 w-16">Status</th>
+                                <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4 w-28">Review</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {catItems.map((item) => {
+                                const rid = item.result_id ?? item.id;
+                                const ic = itemCondition(item);
+                                const isB = ic === "B";
+                                const isItemApproving = approvingItem === rid;
+                                const isItemRejecting = rejectingItem === rid;
+                                return (
+                                  <tr key={rid} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                                    <td className="py-2 px-4 text-sm text-white">{item.item_name || "—"}</td>
+                                    <td className="py-2 px-4 text-center">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${
+                                        isB ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+                                      }`}>
+                                        {isB ? "B" : ic === "K" ? "K" : ic || "—"}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-4 text-center">
+                                      {!isApproved && (
+                                        <div className="flex items-center justify-center gap-1">
+                                          <button
+                                            onClick={() => handleApproveItem(rid)}
+                                            disabled={isItemApproving || isItemRejecting}
+                                            className="p-1 rounded-lg hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 transition-all disabled:opacity-40"
+                                            title="Setujui item"
+                                          >
+                                            {isItemApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                                          </button>
+                                          <button
+                                            onClick={() => { setRejectItemTarget(rid); setRejectItemReason(""); }}
+                                            disabled={isItemApproving || isItemRejecting}
+                                            className="p-1 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all disabled:opacity-40"
+                                            title="Tolak item"
+                                          >
+                                            <XCircle className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
 
@@ -507,6 +590,37 @@ export default function InspectionDetailPage() {
               >
                 {rejectingItem != null && <Loader2 className="w-4 h-4 animate-spin" />}
                 {rejectingItem != null ? "Menolak..." : "Tolak"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────── Reject Category Modal ───────── */}
+      {rejectCategoryTarget != null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setRejectCategoryTarget(null); setRejectCategoryReason(""); }}>
+          <div className="w-full max-w-sm rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Tolak Kategori</h3>
+            <p className="text-sm text-white/50 mb-4">
+              Tolak semua item di kategori <span className="font-semibold text-white">{rejectCategoryTarget.name}</span>?
+            </p>
+            <textarea
+              value={rejectCategoryReason}
+              onChange={(e) => setRejectCategoryReason(e.target.value)}
+              placeholder="Alasan penolakan..."
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm resize-none placeholder:text-white/30 focus:outline-none focus:border-[#FBBF24]/40 transition-colors"
+            />
+            <div className="flex items-center justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setRejectCategoryTarget(null); setRejectCategoryReason(""); }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-all"
+              >Batal</button>
+              <button
+                onClick={handleRejectCategory}
+                className="px-5 py-2 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all flex items-center gap-2"
+              >
+                Tolak
               </button>
             </div>
           </div>

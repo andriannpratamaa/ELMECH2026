@@ -9,22 +9,20 @@ import { CustomSelect } from "@/components/admin/CustomSelect";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, createLab, updateLab, deleteLab } from "@/services/labs";
 import { getUsers } from "@/services/users";
-import { getItems } from "@/services/items";
-import type { Lab, User as UserType, Item } from "@/types/admin";
+import type { Lab, User as UserType } from "@/types/admin";
 
 export default function LabsPage() {
   const router = useRouter();
   const [labs, setLabs] = useState<Lab[]>([]);
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [kalabUsers, setKalabUsers] = useState<UserType[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showForm, setShowForm] = useState(false);
   const [editLab, setEditLab] = useState<Lab | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", item_ids: [] as number[] });
+  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -40,15 +38,13 @@ export default function LabsPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [labData, userData, itemData] = await Promise.all([
+      const [labData, userData] = await Promise.all([
         getLabs(),
         getUsers(),
-        getItems(),
       ]);
       setLabs(labData);
       setAllUsers(userData);
       setKalabUsers(userData.filter((u) => u.role === "kalab"));
-      setItems(itemData);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal memuat data");
     } finally {
@@ -61,13 +57,12 @@ export default function LabsPage() {
   useEffect(() => {
     labs.forEach((lab) => {
       console.log("Lab:", lab);
-      console.log("Item count:", lab.items?.length ?? 0);
     });
   }, [labs]);
 
   const openCreate = () => {
     setEditLab(null);
-    setForm({ nama_lab: "", lokasi: "", kalab_id: "", item_ids: [] });
+    setForm({ nama_lab: "", lokasi: "", kalab_id: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -78,7 +73,6 @@ export default function LabsPage() {
       nama_lab: l.nama_lab,
       lokasi: l.lokasi || "",
       kalab_id: l.kalab_id?.toString() || "",
-      item_ids: l.item_ids ? l.item_ids.split(",").map(Number) : [],
     });
     setErrors({});
     setShowForm(true);
@@ -86,15 +80,6 @@ export default function LabsPage() {
 
   const openDetail = (lab: Lab) => {
     router.push(`/admin/labs/${lab.id}`);
-  };
-
-  const toggleItem = (id: number) => {
-    setForm((prev) => ({
-      ...prev,
-      item_ids: prev.item_ids.includes(id)
-        ? prev.item_ids.filter((i) => i !== id)
-        : [...prev.item_ids, id],
-    }));
   };
 
   const validate = () => {
@@ -111,7 +96,6 @@ export default function LabsPage() {
       nama_lab: form.nama_lab.trim(),
       lokasi: form.lokasi.trim(),
       kalab_id: form.kalab_id ? Number(form.kalab_id) : undefined,
-      item_ids: form.item_ids.join(","),
     };
     try {
       if (editLab) {
@@ -270,6 +254,7 @@ export default function LabsPage() {
                   searchPlaceholder="Cari kalab..."
                 />
               </div>
+<<<<<<< HEAD
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">Daftar Item</label>
                 {items.length === 0 ? (
@@ -304,6 +289,8 @@ export default function LabsPage() {
                   </div>
                 )}
               </div>
+=======
+>>>>>>> b987050b5d776c7dd75e9cb06afd57b43221e1cc
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button onClick={() => { setShowForm(false); setErrors({}); }} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>

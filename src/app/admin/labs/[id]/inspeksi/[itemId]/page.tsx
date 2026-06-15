@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FlaskConical, Plus, Save, Upload, Package, ChevronDown, Download } from "lucide-react";
+import { ArrowLeft, FlaskConical, Plus, Save, Upload, Package, ChevronDown, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getLabs } from "@/services/labs";
-import { getCriteriaByItemId, createCategoryWithSubItems, getApprovedCriteria } from "@/services/criteria";
-import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, updateInspectionResult, exportInspection } from "@/services/inspections";
+import { getCriteriaByItemId, createCategoryWithSubItems, getApprovedCriteria, updateCategoryWithSubItems, approveCategory, rejectCategory } from "@/services/criteria";
+import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, updateInspectionResult, exportInspection, approveMonth, rejectMonth } from "@/services/inspections";
 import { getItemsByLab } from "@/services/items";
 import type { Lab, Item, CriteriaCategory, MonthlyGroup } from "@/types/admin";
 
@@ -31,6 +31,9 @@ export default function ItemInspectionPage() {
     { nama_kategori: "", sub_items: [""] },
   ]);
   const [savingCat, setSavingCat] = useState(false);
+  const [editCategory, setEditCategory] = useState<CriteriaCategory | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; nama: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Inspection form
   const [existingInspection, setExistingInspection] = useState<{ id: number; review_status: string | null; alasan_penolakan: string | null; has_approved_month: boolean } | null>(null);
@@ -46,6 +49,9 @@ export default function ItemInspectionPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [savingInsp, setSavingInsp] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [approvingMonth, setApprovingMonth] = useState<number | null>(null);
+  const [rejectMonthTarget, setRejectMonthTarget] = useState<number | null>(null);
+  const [rejectMonthReason, setRejectMonthReason] = useState("");
 
   const toggleMonth = (bulan: number) => {
     setExpandedMonth((prev) => (prev === bulan ? null : bulan));
@@ -182,6 +188,43 @@ export default function ItemInspectionPage() {
     setCategoryForms(next);
   };
 
+  const handleApproveCategory = async (cat: CriteriaCategory) => {
+    try {
+      await approveCategory(cat.id);
+      toast.success("Kategori berhasil disetujui");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menyetujui kategori");
+    }
+  };
+
+  const handleRejectCategory = async () => {
+    if (!rejectTarget) return;
+    try {
+      await rejectCategory(rejectTarget.id, rejectReason || undefined);
+      toast.success("Kategori ditolak");
+      setRejectTarget(null);
+      setRejectReason("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menolak kategori");
+    }
+  };
+
+  const handleStartEdit = (cat: CriteriaCategory) => {
+    setEditCategory(cat);
+    const subItemsArr = cat.subitems ?? cat.sub_items ?? [];
+    setCategoryForms([{
+      nama_kategori: cat.nama_kategori,
+      sub_items: subItemsArr.map((s) => s.nama_subitem),
+    }]);
+  };
+
+  const handleCancelEdit = () => {
+    setEditCategory(null);
+    setCategoryForms([{ nama_kategori: "", sub_items: [""] }]);
+  };
+
   const handleSaveCategory = async () => {
     const validCategories = categoryForms
       .map((cf) => ({
@@ -197,20 +240,41 @@ export default function ItemInspectionPage() {
 
     setSavingCat(true);
     try {
-      await createCategoryWithSubItems({
-        laboratory_id: labId,
-        item_id: itemId,
-        categories: validCategories.map((c, i) => ({
-          nama_kategori: c.nama_kategori,
-          urutan: i + 1,
-          subitems: c.subitems.map((s, j) => ({ nama_subitem: s, urutan: j + 1 })),
-        })),
-      });
-      toast.success(`${validCategories.length} kategori berhasil dibuat`);
+      if (editCategory) {
+        const originalSubItems = editCategory.subitems ?? editCategory.sub_items ?? [];
+        await updateCategoryWithSubItems(editCategory.id, {
+          nama_kategori: validCategories[0].nama_kategori,
+          urutan: editCategory.urutan || 1,
+          deskripsi: editCategory.deskripsi,
+          subitems: validCategories[0].subitems.map((s, j) => {
+            const match = originalSubItems.find(
+              (orig) => orig.nama_subitem.toLowerCase().trim() === s.toLowerCase().trim()
+            );
+            return {
+              id: match?.id,
+              nama_subitem: s,
+              urutan: j + 1,
+            };
+          }),
+        });
+        toast.success("Kategori berhasil diperbarui");
+        setEditCategory(null);
+      } else {
+        await createCategoryWithSubItems({
+          laboratory_id: labId,
+          item_id: itemId,
+          categories: validCategories.map((c, i) => ({
+            nama_kategori: c.nama_kategori,
+            urutan: i + 1,
+            subitems: c.subitems.map((s, j) => ({ nama_subitem: s, urutan: j + 1 })),
+          })),
+        });
+        toast.success(`${validCategories.length} kategori berhasil dibuat`);
+      }
       setCategoryForms([{ nama_kategori: "", sub_items: [""] }]);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal membuat kategori");
+      toast.error(err.response?.data?.message || "Gagal menyimpan kategori");
     } finally {
       setSavingCat(false);
     }
@@ -268,6 +332,34 @@ export default function ItemInspectionPage() {
       }
     } finally {
       setSavingInsp(false);
+    }
+  };
+
+  const handleApproveMonth = async (bulanKe: number) => {
+    setApprovingMonth(bulanKe);
+    try {
+      await approveMonth(existingInspection!.id, bulanKe);
+      toast.success(`Bulan ke-${bulanKe} berhasil disetujui`);
+      setRefreshKey((k) => k + 1);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menyetujui bulan");
+    } finally {
+      setApprovingMonth(null);
+    }
+  };
+
+  const handleRejectMonthSubmit = async () => {
+    if (rejectMonthTarget == null) return;
+    try {
+      await rejectMonth(existingInspection!.id, rejectMonthTarget, rejectMonthReason || undefined);
+      toast.success(`Bulan ke-${rejectMonthTarget} berhasil ditolak`);
+      setRejectMonthTarget(null);
+      setRejectMonthReason("");
+      setRefreshKey((k) => k + 1);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menolak bulan");
     }
   };
 
@@ -435,6 +527,23 @@ export default function ItemInspectionPage() {
                       >
                         <h3 className="text-sm font-bold text-white">Bulan ke-{bulan}</h3>
                         <div className="flex items-center gap-2">
+                          {revStatus !== "APPROVED" && revStatus !== "REJECTED" && existingInspection && (
+                            <>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleApproveMonth(bulan); }}
+                                disabled={approvingMonth === bulan}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[11px] font-semibold hover:bg-emerald-500/20 transition-all disabled:opacity-40"
+                              >
+                                {approvingMonth === bulan ? "..." : "Setujui"}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setRejectMonthTarget(bulan); setRejectMonthReason(""); }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-[11px] font-semibold hover:bg-red-500/20 transition-all"
+                              >
+                                Tolak
+                              </button>
+                            </>
+                          )}
                           <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                             revStatus === "APPROVED" ? "bg-emerald-500/20 text-emerald-400" :
                             revStatus === "REJECTED" ? "bg-red-500/20 text-red-400" :
@@ -542,18 +651,78 @@ export default function ItemInspectionPage() {
                   <div key={cat.id} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
                     <div className="px-4 py-3 bg-gradient-to-r from-emerald-500/5 to-transparent border-b border-white/5 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-white">{cat.nama_kategori}</h3>
-                      {cat.status && (
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          cat.status === "APPROVED"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : cat.status === "PENDING"
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}>
-                          {cat.status === "APPROVED" ? "Disetujui" : cat.status === "PENDING" ? "Menunggu" : "Ditolak"}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {cat.status === "REJECTED" && !categoriesLocked && (
+                          <>
+                            <button
+                              onClick={() => handleApproveCategory(cat)}
+                              className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
+                              title="Setujui kategori"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleStartEdit(cat)}
+                              className="p-1.5 rounded-lg hover:bg-blue-500/10 text-white/50 hover:text-blue-400 transition-colors"
+                              title="Edit kategori"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                        {cat.status === "PENDING" && !categoriesLocked && (
+                          <>
+                            <button
+                              onClick={() => handleApproveCategory(cat)}
+                              className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
+                              title="Setujui kategori"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => { setRejectTarget({ id: cat.id, nama: cat.nama_kategori }); setRejectReason(cat.alasan_penolakan || ""); }}
+                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors"
+                              title="Tolak kategori"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+                        {cat.status === "APPROVED" && (
+                          <button
+                            onClick={() => { setRejectTarget({ id: cat.id, nama: cat.nama_kategori }); setRejectReason(cat.alasan_penolakan || ""); }}
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors"
+                            title="Tolak kategori"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                        {cat.status && (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            cat.status === "APPROVED"
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : cat.status === "PENDING"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-red-500/20 text-red-400"
+                          }`}>
+                            {cat.status === "APPROVED" ? "Disetujui" : cat.status === "PENDING" ? "Menunggu" : "Ditolak"}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {cat.status === "REJECTED" && cat.alasan_penolakan && (
+                      <div className="px-4 py-2 bg-red-500/5 border-b border-red-500/10 text-xs text-red-400/80">
+                        Alasan: {cat.alasan_penolakan}
+                      </div>
+                    )}
                     {subItemsArr.length === 0 ? (
                       <div className="px-4 py-3 text-xs text-white/30 italic">Tidak ada sub item</div>
                     ) : (
@@ -637,19 +806,23 @@ export default function ItemInspectionPage() {
           )}
         </div>
 
-        {/* ───────── Card 2: Tambah Kategori ───────── */}
-        <div className={`rounded-2xl p-6 ${categoriesLocked ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
+        {/* ───────── Card 2: Tambah/Edit Kategori ───────── */}
+        <div className={`rounded-2xl p-6 ${categoriesLocked && !editCategory ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
           <div className="flex items-center gap-3 mb-5">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoriesLocked ? "bg-white/5" : "bg-blue-500/10"}`}>
-              <Plus className={`w-5 h-5 ${categoriesLocked ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoriesLocked && !editCategory ? "bg-white/5" : "bg-blue-500/10"}`}>
+              <Plus className={`w-5 h-5 ${categoriesLocked && !editCategory ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoriesLocked ? "text-white/30" : "text-white"}`}>Tambah Kategori</h2>
-              <p className="text-xs text-white/40">Buat kategori dan sub item inspeksi</p>
+              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoriesLocked && !editCategory ? "text-white/30" : "text-white"}`}>
+                {editCategory ? "Edit Kategori" : "Tambah Kategori"}
+              </h2>
+              <p className="text-xs text-white/40">
+                {editCategory ? "Perbarui kategori yang ditolak" : "Buat kategori dan sub item inspeksi"}
+              </p>
             </div>
           </div>
 
-          {categoriesLocked ? (
+          {categoriesLocked && !editCategory ? (
             <div className="p-6 text-center border border-dashed border-white/10 rounded-xl space-y-2">
               <p className="text-sm text-white/40 font-medium">Kategori Terkunci</p>
               <p className="text-xs text-white/30">Kategori tidak dapat diubah karena inspeksi sudah berjalan.</p>
@@ -660,7 +833,7 @@ export default function ItemInspectionPage() {
                 <div key={catIdx} className="rounded-xl bg-white/5 border border-white/10 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">Kategori {catIdx + 1}</span>
-                    {categoryForms.length > 1 && (
+                    {categoryForms.length > 1 && !editCategory && (
                       <button onClick={() => removeCategoryForm(catIdx)} className="text-xs text-red-400 hover:text-red-300 transition-colors">Hapus</button>
                     )}
                   </div>
@@ -690,25 +863,103 @@ export default function ItemInspectionPage() {
                 </div>
               ))}
 
-              <button
-                onClick={addCategoryForm}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-white/10 text-white/50 text-sm font-medium hover:border-blue-400/40 hover:text-blue-400 transition-all"
-              >
-                <Plus className="w-4 h-4" /> Tambah Kategori Lagi
-              </button>
+              {!editCategory && (
+                <button
+                  onClick={addCategoryForm}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-white/10 text-white/50 text-sm font-medium hover:border-blue-400/40 hover:text-blue-400 transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Kategori Lagi
+                </button>
+              )}
 
-              <button
-                onClick={handleSaveCategory}
-                disabled={savingCat}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {savingCat ? "Menyimpan..." : "Simpan Semua Kategori"}
-              </button>
+              <div className="flex items-center gap-2">
+                {editCategory && (
+                  <button
+                    onClick={handleCancelEdit}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+                  >
+                    Batal Edit
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveCategory}
+                  disabled={savingCat}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingCat ? "Menyimpan..." : editCategory ? "Update Kategori" : "Simpan Semua Kategori"}
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* ───────── Reject Month Modal ───────── */}
+      {rejectMonthTarget != null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-1">Tolak Bulan ke-{rejectMonthTarget}</h3>
+            <p className="text-sm text-white/50 mb-4">
+              Yakin ingin menolak seluruh item di bulan ke-{rejectMonthTarget}?
+            </p>
+            <textarea
+              value={rejectMonthReason}
+              onChange={(e) => setRejectMonthReason(e.target.value)}
+              placeholder="Alasan penolakan (opsional)..."
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none focus:outline-none focus:ring-2 focus:ring-red-400/40 mb-4"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setRejectMonthTarget(null); setRejectMonthReason(""); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleRejectMonthSubmit}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all"
+              >
+                Tolak
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────── Reject Kategori Modal ───────── */}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-1">Tolak Kategori</h3>
+            <p className="text-sm text-white/50 mb-4">
+              Yakin ingin menolak kategori <span className="text-white font-semibold">{rejectTarget.nama}</span>?
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Alasan penolakan (opsional)..."
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none focus:outline-none focus:ring-2 focus:ring-red-400/40 mb-4"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setRejectTarget(null); setRejectReason(""); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleRejectCategory}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all"
+              >
+                Tolak
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

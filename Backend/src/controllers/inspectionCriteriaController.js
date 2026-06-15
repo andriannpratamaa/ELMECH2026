@@ -186,7 +186,7 @@ const updateCategory = async (req, res, next) => {
     const userId = req.user.id;
 
     const [categories] = await pool.query(
-      'SELECT id, status, created_by FROM inspection_categories WHERE id = ?',
+      'SELECT id, status, created_by, laboratory_id FROM inspection_categories WHERE id = ?',
       [id]
     );
 
@@ -196,7 +196,7 @@ const updateCategory = async (req, res, next) => {
 
     const cat = categories[0];
 
-    if (req.user.role !== 'admin' && cat.created_by !== userId) {
+    if (req.user.role !== 'admin' && cat.created_by !== userId && req.user.laboratory_id !== cat.laboratory_id) {
       return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses' });
     }
 
@@ -269,7 +269,7 @@ const updateCategoryWithSubitems = async (req, res, next) => {
     const userId = req.user.id;
 
     const [categories] = await pool.query(
-      'SELECT id, status, created_by FROM inspection_categories WHERE id = ?',
+      'SELECT id, status, created_by, laboratory_id FROM inspection_categories WHERE id = ?',
       [id]
     );
 
@@ -279,7 +279,7 @@ const updateCategoryWithSubitems = async (req, res, next) => {
 
     const cat = categories[0];
 
-    if (req.user.role !== 'admin' && cat.created_by !== userId) {
+    if (req.user.role !== 'admin' && cat.created_by !== userId && req.user.laboratory_id !== cat.laboratory_id) {
       return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses' });
     }
 
@@ -435,7 +435,7 @@ const approveCategory = async (req, res, next) => {
       });
     }
 
-    if (categories[0].status !== 'PENDING') {
+    if (!['PENDING', 'REJECTED'].includes(categories[0].status)) {
       return res.status(400).json({
         success: false,
         message: `Kategori sudah memiliki status: ${categories[0].status}`
@@ -444,7 +444,7 @@ const approveCategory = async (req, res, next) => {
 
     // Update status to APPROVED
     await pool.query(
-      'UPDATE inspection_categories SET status = ? WHERE id = ?',
+      'UPDATE inspection_categories SET status = ?, alasan_penolakan = NULL WHERE id = ?',
       ['APPROVED', id]
     );
 
@@ -476,7 +476,7 @@ const rejectCategory = async (req, res, next) => {
       });
     }
 
-    if (categories[0].status !== 'PENDING') {
+    if (!['PENDING', 'APPROVED'].includes(categories[0].status)) {
       return res.status(400).json({
         success: false,
         message: `Kategori sudah memiliki status: ${categories[0].status}`
