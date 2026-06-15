@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FlaskConical, Plus, Save, Upload, Package, ChevronDown, Download } from "lucide-react";
+import { ArrowLeft, FlaskConical, Plus, Save, Upload, Package, ChevronDown, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getLabs } from "@/services/labs";
-import { getCriteriaByItemId, createCategoryWithSubItems, getApprovedCriteria } from "@/services/criteria";
+import { getCriteriaByItemId, createCategoryWithSubItems, getApprovedCriteria, updateCategoryWithSubItems } from "@/services/criteria";
 import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, updateInspectionResult, exportInspection } from "@/services/inspections";
 import { getItemsByLab } from "@/services/items";
 import type { Lab, Item, CriteriaCategory, MonthlyGroup } from "@/types/admin";
@@ -30,6 +30,7 @@ export default function KalabItemInspectionPage() {
     { nama_kategori: "", sub_items: [""] },
   ]);
   const [savingCat, setSavingCat] = useState(false);
+  const [editCategory, setEditCategory] = useState<CriteriaCategory | null>(null);
 
   const [existingInspection, setExistingInspection] = useState<{ id: number; review_status: string | null; alasan_penolakan: string | null; has_approved_month: boolean } | null>(null);
   const isRejected = existingInspection?.review_status === "REJECTED";
@@ -177,6 +178,20 @@ export default function KalabItemInspectionPage() {
     setCategoryForms(next);
   };
 
+  const handleStartEdit = (cat: CriteriaCategory) => {
+    setEditCategory(cat);
+    const subItemsArr = cat.subitems ?? cat.sub_items ?? [];
+    setCategoryForms([{
+      nama_kategori: cat.nama_kategori,
+      sub_items: subItemsArr.map((s) => s.nama_subitem),
+    }]);
+  };
+
+  const handleCancelEdit = () => {
+    setEditCategory(null);
+    setCategoryForms([{ nama_kategori: "", sub_items: [""] }]);
+  };
+
   const handleSaveCategory = async () => {
     const validCategories = categoryForms
       .map((cf) => ({
@@ -192,20 +207,41 @@ export default function KalabItemInspectionPage() {
 
     setSavingCat(true);
     try {
-      await createCategoryWithSubItems({
-        laboratory_id: labId,
-        item_id: itemId,
-        categories: validCategories.map((c, i) => ({
-          nama_kategori: c.nama_kategori,
-          urutan: i + 1,
-          subitems: c.subitems.map((s, j) => ({ nama_subitem: s, urutan: j + 1 })),
-        })),
-      });
-      toast.success(`${validCategories.length} kategori berhasil dibuat`);
+      if (editCategory) {
+        const originalSubItems = editCategory.subitems ?? editCategory.sub_items ?? [];
+        await updateCategoryWithSubItems(editCategory.id, {
+          nama_kategori: validCategories[0].nama_kategori,
+          urutan: editCategory.urutan || 1,
+          deskripsi: editCategory.deskripsi,
+          subitems: validCategories[0].subitems.map((s, j) => {
+            const match = originalSubItems.find(
+              (orig) => orig.nama_subitem.toLowerCase().trim() === s.toLowerCase().trim()
+            );
+            return {
+              id: match?.id,
+              nama_subitem: s,
+              urutan: j + 1,
+            };
+          }),
+        });
+        toast.success("Kategori berhasil diperbarui");
+        setEditCategory(null);
+      } else {
+        await createCategoryWithSubItems({
+          laboratory_id: labId,
+          item_id: itemId,
+          categories: validCategories.map((c, i) => ({
+            nama_kategori: c.nama_kategori,
+            urutan: i + 1,
+            subitems: c.subitems.map((s, j) => ({ nama_subitem: s, urutan: j + 1 })),
+          })),
+        });
+        toast.success(`${validCategories.length} kategori berhasil dibuat`);
+      }
       setCategoryForms([{ nama_kategori: "", sub_items: [""] }]);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal membuat kategori");
+      toast.error(err.response?.data?.message || "Gagal menyimpan kategori");
     } finally {
       setSavingCat(false);
     }
@@ -534,18 +570,34 @@ export default function KalabItemInspectionPage() {
                   <div key={cat.id} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
                     <div className="px-4 py-3 bg-gradient-to-r from-emerald-500/5 to-transparent border-b border-white/5 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-white">{cat.nama_kategori}</h3>
-                      {cat.status && (
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          cat.status === "APPROVED"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : cat.status === "PENDING"
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}>
-                          {cat.status === "APPROVED" ? "Disetujui" : cat.status === "PENDING" ? "Menunggu" : "Ditolak"}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {cat.status === "REJECTED" && !categoriesLocked && (
+                          <button
+                            onClick={() => handleStartEdit(cat)}
+                            className="p-1.5 rounded-lg hover:bg-blue-500/10 text-white/50 hover:text-blue-400 transition-colors"
+                            title="Edit kategori"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {cat.status && (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            cat.status === "APPROVED"
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : cat.status === "PENDING"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-red-500/20 text-red-400"
+                          }`}>
+                            {cat.status === "APPROVED" ? "Disetujui" : cat.status === "PENDING" ? "Menunggu" : "Ditolak"}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {cat.status === "REJECTED" && cat.alasan_penolakan && (
+                      <div className="px-4 py-2 bg-red-500/5 border-b border-red-500/10 text-xs text-red-400/80">
+                        Alasan: {cat.alasan_penolakan}
+                      </div>
+                    )}
                     {subItemsArr.length === 0 ? (
                       <div className="px-4 py-3 text-xs text-white/30 italic">Tidak ada sub item</div>
                     ) : (
@@ -629,19 +681,23 @@ export default function KalabItemInspectionPage() {
           )}
         </div>
 
-        {/* ───────── Card 2: Tambah Kategori ───────── */}
-        <div className={`rounded-2xl p-6 ${categoriesLocked ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
+        {/* ───────── Card 2: Tambah/Edit Kategori ───────── */}
+        <div className={`rounded-2xl p-6 ${categoriesLocked && !editCategory ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
           <div className="flex items-center gap-3 mb-5">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoriesLocked ? "bg-white/5" : "bg-blue-500/10"}`}>
-              <Plus className={`w-5 h-5 ${categoriesLocked ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoriesLocked && !editCategory ? "bg-white/5" : "bg-blue-500/10"}`}>
+              <Plus className={`w-5 h-5 ${categoriesLocked && !editCategory ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoriesLocked ? "text-white/30" : "text-white"}`}>Tambah Kategori</h2>
-              <p className="text-xs text-white/40">Buat kategori dan sub item inspeksi</p>
+              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoriesLocked && !editCategory ? "text-white/30" : "text-white"}`}>
+                {editCategory ? "Edit Kategori" : "Tambah Kategori"}
+              </h2>
+              <p className="text-xs text-white/40">
+                {editCategory ? "Perbarui kategori yang ditolak" : "Buat kategori dan sub item inspeksi"}
+              </p>
             </div>
           </div>
 
-          {categoriesLocked ? (
+          {categoriesLocked && !editCategory ? (
             <div className="p-6 text-center border border-dashed border-white/10 rounded-xl space-y-2">
               <p className="text-sm text-white/40 font-medium">Kategori Terkunci</p>
               <p className="text-xs text-white/30">Kategori tidak dapat diubah karena inspeksi sudah berjalan.</p>
@@ -689,13 +745,22 @@ export default function KalabItemInspectionPage() {
                 <Plus className="w-4 h-4" /> Tambah Kategori Lagi
               </button>
 
+              {editCategory && (
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={savingCat}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition-all"
+                >
+                  Batal Edit
+                </button>
+              )}
               <button
                 onClick={handleSaveCategory}
                 disabled={savingCat}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                {savingCat ? "Menyimpan..." : "Simpan Semua Kategori"}
+                {savingCat ? "Menyimpan..." : editCategory ? "Update Kategori" : "Simpan Semua Kategori"}
               </button>
             </div>
           )}

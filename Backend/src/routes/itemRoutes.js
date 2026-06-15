@@ -28,19 +28,17 @@ router.get('/my', verifyToken, getMyItems);
 // Get item by ID
 router.get('/:id', verifyToken, getItemById);
 
-// Create item (admin only)
+// Create item (admin & kalab)
 router.post('/',
   verifyToken,
-  authorizeRole('admin'),
+  authorizeRole('admin', 'kalab'),
   createItem
 );
 
-// Update item (admin only)
+// Update item (admin & kalab)
 router.put('/:id',
   verifyToken,
-  authorizeRole('admin'),
-  validateItem,
-  handleValidationErrors,
+  authorizeRole('admin', 'kalab'),
   updateItem
 );
 

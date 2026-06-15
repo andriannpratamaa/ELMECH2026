@@ -108,20 +108,7 @@ export default function KalabItemsPage() {
         await updateItem(editItem.id, payload);
         toast.success("Item berhasil diperbarui");
       } else {
-        const newItem = await createItem(payload);
-        if (lab && userLabId) {
-          const currentIds = lab.item_ids ? lab.item_ids.split(",").map(Number).filter(Boolean) : [];
-          if (!currentIds.includes(newItem.id)) {
-            currentIds.push(newItem.id);
-            const { default: { updateLab } } = await import("@/services/labs");
-            await updateLab(userLabId, {
-              nama_lab: lab.nama_lab,
-              lokasi: lab.lokasi || "",
-              kalab_id: lab.kalab_id,
-              item_ids: currentIds.join(","),
-            });
-          }
-        }
+        await createItem(payload);
         toast.success("Item berhasil disimpan");
       }
       setShowForm(false);

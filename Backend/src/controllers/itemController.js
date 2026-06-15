@@ -117,22 +117,38 @@ const createItem = async (req, res, next) => {
       });
     }
 
+    const kondisiFinal = kondisi || 'baik';
+    const statusFinal = status || 'aktif';
     const [result] = await pool.query(
       'INSERT INTO items (nama_barang, kode_barang, pembuat_alat, tanggal_pembelian, kondisi, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisi, status || 'aktif']
+      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisiFinal, statusFinal]
     );
+
+    const newItemId = result.insertId;
+
+    // Otomatis tambahkan item ke lab kalab yang membuat
+    if (req.user.role === 'kalab' && req.user.laboratory_id) {
+      const [labs] = await pool.query('SELECT item_ids FROM laboratories WHERE id = ?', [req.user.laboratory_id]);
+      if (labs.length > 0) {
+        const currentIds = labs[0].item_ids ? labs[0].item_ids.split(',').map(Number).filter(Boolean) : [];
+        if (!currentIds.includes(newItemId)) {
+          currentIds.push(newItemId);
+          await pool.query('UPDATE laboratories SET item_ids = ? WHERE id = ?', [currentIds.join(','), req.user.laboratory_id]);
+        }
+      }
+    }
 
     res.status(201).json({
       success: true,
       message: 'Barang berhasil dibuat',
       data: {
-        id: result.insertId,
+        id: newItemId,
         nama_barang,
         kode_barang,
         pembuat_alat: pembuat_alat || null,
         tanggal_pembelian: tanggal_pembelian || null,
-        kondisi,
-        status: status || 'aktif'
+        kondisi: kondisiFinal,
+        status: statusFinal
       }
     });
   } catch (err) {
@@ -155,10 +171,12 @@ const updateItem = async (req, res, next) => {
       });
     }
 
+    const kondisiFinal = kondisi || 'baik';
+    const statusFinal = status || 'aktif';
     // Update item
     await pool.query(
       'UPDATE items SET nama_barang = ?, kode_barang = ?, pembuat_alat = ?, tanggal_pembelian = ?, kondisi = ?, status = ? WHERE id = ?',
-      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisi, status, id]
+      [nama_barang, kode_barang, pembuat_alat || null, tanggal_pembelian || null, kondisiFinal, statusFinal, id]
     );
 
     res.status(200).json({
@@ -182,6 +200,16 @@ const deleteItem = async (req, res, next) => {
         success: false,
         message: 'Barang tidak ditemukan'
       });
+    }
+
+    // Hapus item_id dari semua lab yang mereferensi
+    const [labs] = await pool.query('SELECT id, item_ids FROM laboratories WHERE item_ids IS NOT NULL');
+    for (const lab of labs) {
+      const ids = lab.item_ids.split(',').map(Number).filter(Boolean);
+      const filtered = ids.filter((iid) => iid !== Number(id));
+      if (filtered.length !== ids.length) {
+        await pool.query('UPDATE laboratories SET item_ids = ? WHERE id = ?', [filtered.join(','), lab.id]);
+      }
     }
 
     // Delete item

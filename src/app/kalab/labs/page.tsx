@@ -22,12 +22,8 @@ export default function KalabLabsPage() {
       const u = getUser();
       setUser(u);
       const data = await getLabs();
-      if (u?.laboratory_id) {
-        const filtered = data.filter((l) => l.id === u.laboratory_id);
-        setLabs(filtered.length > 0 ? filtered : data);
-      } else {
-        setLabs(data);
-      }
+      const filtered = u?.id ? data.filter((l) => l.kalab_id === u.id) : [];
+      setLabs(filtered);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal memuat data laboratorium");
     } finally {
