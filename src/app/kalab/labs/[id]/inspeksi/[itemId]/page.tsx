@@ -297,8 +297,7 @@ export default function KalabItemInspectionPage() {
       const msg = errData?.message || "";
       const existingId = errData?.data?.id || errData?.data?.inspection_id;
       if (!isRejected && !isApproved && existingId) {
-        toast.info("Inspeksi sudah ada. Mengalihkan ke detail...");
-        router.push(`/kalab/inspections/detail/${existingId}`);
+        toast.info("Inspeksi sudah ada");
       } else {
         toast.error(msg || "Gagal menyimpan inspeksi");
       }
@@ -530,12 +529,12 @@ export default function KalabItemInspectionPage() {
             <div className="p-6 text-center border border-yellow-500/30 bg-yellow-500/5 rounded-xl space-y-3">
               <div className="text-yellow-400 text-lg font-bold">Inspeksi Sudah Dikirim</div>
               <p className="text-sm text-white/50">Inspeksi untuk alat ini sudah pernah dikirim dan menunggu review admin.</p>
-              <a
-                href={`/kalab/inspections/detail/${existingInspection.id}`}
+              <button
+                onClick={() => toast.info("Detail inspeksi tersedia di halaman admin")}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-yellow-500/20 text-yellow-400 text-sm font-semibold hover:bg-yellow-500/30 transition-all"
               >
                 <Package className="w-4 h-4" /> Lihat Detail Inspeksi
-              </a>
+              </button>
             </div>
           ) : isRejected && categories.length === 0 ? (
             <div className="p-6 text-center border border-red-500/30 bg-red-500/5 rounded-xl space-y-3">

@@ -9,7 +9,6 @@ import { getUser, removeToken } from "@/services/auth";
 const PATH_LABELS: Record<string, string> = {
   "/kalab/dashboard": "Dashboard",
   "/kalab/labs": "Lab Saya",
-  "/kalab/items": "Alat Saya",
 };
 
 export default function KalabTopbar({ onMenuClick }: { onMenuClick: () => void }) {

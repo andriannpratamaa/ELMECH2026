@@ -110,12 +110,6 @@ export default function KalabDashboardPage() {
           <p className="text-sm text-amber-200/80">
             Kamu memiliki <span className="font-semibold text-amber-200">{stats.pendingInspections} inspeksi</span> yang perlu direview atau menunggu persetujuan.
           </p>
-          <button
-            onClick={() => router.push("/kalab/inspections")}
-            className="ml-auto shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-all"
-          >
-            Lihat
-          </button>
         </div>
       )}
     </div>
