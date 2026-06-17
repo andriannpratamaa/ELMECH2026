@@ -6,23 +6,17 @@ import { Menu, X, GraduationCap, Shield } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getNavLinks } from "@/services/api";
-import { isAuthenticated } from "@/services/auth";
 const NAV_LINKS = getNavLinks();
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [auth, setAuth] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    setAuth(isAuthenticated());
   }, []);
 
   useEffect(() => {
@@ -93,15 +87,17 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center gap-3">
-              {auth && (
-                <Link
-                  href="/admin/dashboard"
-                  className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20 hover:bg-[#FBBF24]/20 transition-all duration-300"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  Admin
-                </Link>
-              )}
+              <Link
+                href="/admin"
+                className={`hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-300 ${
+                  scrolled
+                    ? "text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20 hover:bg-[#FBBF24]/20"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Admin
+              </Link>
               <Link
                 href="/program"
                 className="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0F172A] bg-[#FBBF24] hover:bg-[#FCD34D] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#FBBF24]/20"
@@ -170,22 +166,20 @@ export default function Navbar() {
                     </Link>
                   </motion.div>
                 ))}
-                {auth && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: NAV_LINKS.length * 0.05 + 0.05, duration: 0.3 }}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: NAV_LINKS.length * 0.05 + 0.05, duration: 0.3 }}
+                >
+                  <Link
+                    href="/admin"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20"
                   >
-                    <Link
-                      href="/admin/dashboard"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20"
-                    >
-                      <Shield className="w-4 h-4" />
-                      Admin Panel
-                    </Link>
-                  </motion.div>
-                )}
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </Link>
+                </motion.div>
               </div>
               <div className="pt-6 border-t border-white/10">
                 <Link
