@@ -114,7 +114,7 @@ export default function InspectionsPage() {
       const response = await getCriteriaByItemId(Number(itemId));
       setCategories(response.data || []);
     } catch {
-      toast.error("Gagal memuat kategori inspeksi");
+      toast.error("Gagal memuat pemeriksaan");
     } finally {
       setLoadingCategories(false);
     }
@@ -137,11 +137,11 @@ export default function InspectionsPage() {
       return;
     }
     if (allSubItems.length === 0) {
-      toast.error("Tidak ada sub item untuk diperiksa");
+      toast.error("Tidak ada sub pemeriksaan untuk diperiksa");
       return;
     }
     if (!allSelected) {
-      toast.error("Semua sub item wajib dipilih (B atau K)");
+      toast.error("Semua sub pemeriksaan wajib dipilih (B atau K)");
       return;
     }
 
@@ -176,7 +176,7 @@ export default function InspectionsPage() {
         toast.info("Inspeksi sudah ada. Mengalihkan ke halaman detail...");
         router.push(`/admin/inspections/detail/${existingId}`);
       } else if (msg.includes("sudah ada") || msg.toLowerCase().includes("already exists")) {
-        toast.info("Inspeksi untuk item ini sudah ada. Pergi ke tab Approval untuk melihat daftar.");
+        toast.info("Inspeksi untuk peralatan ini sudah ada. Pergi ke tab Approval untuk melihat daftar.");
         setPageTab("approval");
       } else {
         toast.error(msg || "Gagal menyimpan inspeksi");
@@ -280,7 +280,7 @@ export default function InspectionsPage() {
                   ) : categories.length === 0 ? (
                     <div className="p-6 text-center text-white/30 text-sm">
                       <PackageSearch className="w-8 h-8 mx-auto mb-2 text-white/20" strokeWidth={1.5} />
-                      Belum ada kategori inspeksi untuk alat ini
+                      Belum ada pemeriksaan untuk alat ini
                     </div>
                   ) : (
                     <>
@@ -321,10 +321,10 @@ export default function InspectionsPage() {
                                 )}
                               </div>
 
-                              {/* Sub Items */}
+                              {/* Sub Pemeriksaan */}
                               {subItems.length === 0 ? (
                                 <div className="px-5 py-4 text-sm text-white/30 italic">
-                                  Tidak ada sub item untuk kategori ini
+                                  Tidak ada sub pemeriksaan untuk pemeriksaan ini
                                 </div>
                               ) : (
                                 <div className="divide-y divide-white/5">

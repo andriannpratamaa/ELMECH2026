@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS inspections (
   laboratory_id INT NOT NULL,
   item_id INT NOT NULL,
   inspector_id INT NOT NULL,
+  tahun YEAR NOT NULL DEFAULT (YEAR(CURDATE())),
+  semester ENUM('GANJIL', 'GENAP') NOT NULL DEFAULT 'GANJIL',
   tanggal_inspeksi DATETIME NOT NULL,
   catatan TEXT,
   foto VARCHAR(255),
@@ -55,10 +57,12 @@ CREATE TABLE IF NOT EXISTS inspections (
   FOREIGN KEY (laboratory_id) REFERENCES laboratories(id) ON DELETE CASCADE,
   FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
   FOREIGN KEY (inspector_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uk_item_tahun_semester (item_id, tahun, semester),
   INDEX idx_laboratory_id (laboratory_id),
   INDEX idx_item_id (item_id),
   INDEX idx_inspector_id (inspector_id),
-  INDEX idx_tanggal_inspeksi (tanggal_inspeksi)
+  INDEX idx_tanggal_inspeksi (tanggal_inspeksi),
+  INDEX idx_tahun_semester (tahun, semester)
 );
 
 -- Inspection Categories (Kategori Pemeriksaan)

@@ -9,7 +9,7 @@ export interface User {
   name: string;
   email: string;
   nip?: string;
-  role: "admin" | "kalab";
+  role: "admin" | "kalab" | "plp";
   password?: string;
   laboratory_id?: number | null;
   lab_name?: string;
@@ -61,6 +61,7 @@ export interface Inspection {
   year?: number;
   status?: string;
   approval_status?: string;
+  review_status?: string;
   created_at?: string;
   tanggal_inspeksi?: string;
   inspector_name?: string;
@@ -74,6 +75,8 @@ export interface Inspection {
   foto_url?: string;
   alasan_penolakan?: string;
   catatan?: string;
+  tahun?: number;
+  semester?: string;
 }
 
 export interface MonthlyGroup {
@@ -152,6 +155,7 @@ export interface CriteriaSubItem {
   kategori_id?: number;
   category_id?: number;
   category_name?: string;
+  laboratory_id?: number;
   status?: string;
   alasan_penolakan?: string;
   created_at?: string;

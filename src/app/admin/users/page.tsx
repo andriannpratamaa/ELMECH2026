@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { CustomSelect } from "@/components/admin/CustomSelect";
@@ -20,9 +20,10 @@ export default function UsersPage() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", nip: "", role: "kalab", password: "", laboratory_id: "" });
+  const [form, setForm] = useState({ name: "", email: "", nip: "", role: "kalab", password: "",  plp1_id: "", plp2_id: "", laboratory_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -72,7 +73,7 @@ export default function UsersPage() {
       name: form.name,
       email: form.email,
       nip: form.nip,
-      role: form.role as "admin" | "kalab",
+      role: form.role as "admin" | "kalab" | "plp",
       laboratory_id: form.laboratory_id ? Number(form.laboratory_id) : null,
     };
     if (form.password) payload.password = form.password;
@@ -168,12 +169,13 @@ export default function UsersPage() {
                   options={[
                     { value: "admin", label: "Admin" },
                     { value: "kalab", label: "Kalab" },
+                    { value: "plp", label: "PLP" },
                   ]}
                   placeholder="Pilih Role"
                   showSearch={false}
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">Laboratory (opsional)</label>
                 <CustomSelect
                   value={form.laboratory_id}
@@ -186,10 +188,15 @@ export default function UsersPage() {
                   showSearch={labs.length > 5}
                   searchPlaceholder="Cari lab..."
                 />
-              </div>
+              </div> */}
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">{editUser ? "Password (kosongkan jika tidak diubah)" : "Password"}</label>
-                <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40 pr-10" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
               </div>
             </div>

@@ -8,7 +8,8 @@ import {
   ClipboardCheck, CheckSquare, UserCircle, LogOut, X, GraduationCap,
 } from "lucide-react";
 import { removeToken } from "@/services/auth";
-
+import { useEffect, useState } from "react";
+import { getAdminNotifications } from "@/services/notifications";
 const MENU = [
   { section: null, items: [
     { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -31,7 +32,7 @@ const MENU = [
 export default function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-
+  const [notificationCount, setNotificationCount] = useState(0);
   const handleLogout = () => {
     removeToken();
     router.push("/admin");
@@ -41,6 +42,23 @@ export default function AdminSidebar({ open, onClose }: { open: boolean; onClose
     if (href === '/admin/dashboard') return pathname === href;
     return pathname.startsWith(href);
   };
+
+useEffect(() => {
+  const fetchNotifications = async () => {
+    try {
+      const data = await getAdminNotifications();
+
+      console.log("DATA NOTIF:", data);
+console.log("JUMLAH:", data.length);
+      setNotificationCount(data.length);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchNotifications();
+}, []);
+console.log("Total Notifikasi :", notificationCount);
 
   const sidebar = (
     <aside className="h-full flex flex-col bg-[#0F172A] border-r border-white/5">

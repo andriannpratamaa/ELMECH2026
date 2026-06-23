@@ -62,10 +62,10 @@ export default function CriteriaPage() {
   const handleApproveCategory = async (id: number) => {
     try {
       await bulkApproveCategories({ ids: [id] });
-      toast.success("Kategori dan sub item berhasil disetujui");
+      toast.success("Pemeriksaan dan sub pemeriksaan berhasil disetujui");
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menyetujui kategori");
+      toast.error(err.response?.data?.message || "Gagal menyetujui pemeriksaan");
     }
   };
 
@@ -74,12 +74,12 @@ export default function CriteriaPage() {
     setRejecting(true);
     try {
       await rejectCategory(rejectCategoryId, rejectReason || undefined);
-      toast.success("Kategori berhasil ditolak");
+      toast.success("Pemeriksaan berhasil ditolak");
       setRejectCategoryId(null);
       setRejectReason("");
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menolak kategori");
+      toast.error(err.response?.data?.message || "Gagal menolak pemeriksaan");
     } finally {
       setRejecting(false);
     }
@@ -88,20 +88,20 @@ export default function CriteriaPage() {
   const handleApproveSubItem = async (id: number) => {
     try {
       await approveSubItem(id);
-      toast.success("Sub item berhasil disetujui");
+      toast.success("Sub pemeriksaan berhasil disetujui");
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menyetujui sub item");
+      toast.error(err.response?.data?.message || "Gagal menyetujui sub pemeriksaan");
     }
   };
 
   const handleRejectSubItem = async (id: number) => {
     try {
       await rejectSubItem(id);
-      toast.success("Sub item berhasil ditolak");
+      toast.success("Sub pemeriksaan berhasil ditolak");
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menolak sub item");
+      toast.error(err.response?.data?.message || "Gagal menolak sub pemeriksaan");
     }
   };
 
@@ -110,11 +110,11 @@ export default function CriteriaPage() {
     setDeletingCategory(true);
     try {
       await deleteCategory(deleteCategoryId);
-      toast.success("Kategori beserta sub item berhasil dihapus");
+      toast.success("Pemeriksaan beserta sub pemeriksaan berhasil dihapus");
       setDeleteCategoryId(null);
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menghapus kategori");
+      toast.error(err.response?.data?.message || "Gagal menghapus pemeriksaan");
     } finally {
       setDeletingCategory(false);
     }
@@ -125,11 +125,11 @@ export default function CriteriaPage() {
     setDeletingSubItem(true);
     try {
       await deleteSubItem(deleteSubItemId);
-      toast.success("Sub item berhasil dihapus");
+      toast.success("Sub pemeriksaan berhasil dihapus");
       setDeleteSubItemId(null);
       fetchAll();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menghapus sub item");
+      toast.error(err.response?.data?.message || "Gagal menghapus sub pemeriksaan");
     } finally {
       setDeletingSubItem(false);
     }
@@ -190,7 +190,7 @@ export default function CriteriaPage() {
       {rejectCategoryId !== null && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" onClick={() => !rejecting && setRejectCategoryId(null)}>
           <div className="w-full max-w-md rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-2">Tolak Kategori</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">Tolak Pemeriksaan</h2>
             <p className="text-sm text-white/50 mb-4">Berikan alasan penolakan agar kalab bisa memperbaiki.</p>
             <textarea
               value={rejectReason}
@@ -213,8 +213,8 @@ export default function CriteriaPage() {
         open={!!deleteCategoryId}
         onOpenChange={(o) => !o && setDeleteCategoryId(null)}
         onConfirm={handleDeleteCategory}
-        title="Hapus Kategori"
-        description="Hapus kategori ini beserta seluruh sub item di dalamnya?"
+        title="Hapus Pemeriksaan"
+        description="Hapus pemeriksaan ini beserta seluruh sub pemeriksaan di dalamnya?"
         loading={deletingCategory}
       />
 
@@ -222,8 +222,8 @@ export default function CriteriaPage() {
         open={!!deleteSubItemId}
         onOpenChange={(o) => !o && setDeleteSubItemId(null)}
         onConfirm={handleDeleteSubItem}
-        title="Hapus Sub Item"
-        description="Hapus sub item ini?"
+        title="Hapus Sub Pemeriksaan"
+        description="Hapus sub pemeriksaan ini?"
         loading={deletingSubItem}
       />
     </div>
@@ -286,9 +286,9 @@ function CategoriesTab({
   const handleSave = async () => {
     if (!laboratoryId) { toast.error("Pilih laboratorium terlebih dahulu"); return; }
     if (!selectedAlatId) { toast.error("Pilih nama alat terlebih dahulu"); return; }
-    if (!namaKategori.trim()) { toast.error("Nama kategori wajib diisi"); return; }
+    if (!namaKategori.trim()) { toast.error("Nama pemeriksaan wajib diisi"); return; }
     const filteredSubItems = subItems.map((s) => s.trim()).filter(Boolean);
-    if (filteredSubItems.length === 0) { toast.error("Minimal 1 sub item wajib diisi"); return; }
+    if (filteredSubItems.length === 0) { toast.error("Minimal 1 sub pemeriksaan wajib diisi"); return; }
 
     setSaving(true);
     try {
@@ -306,7 +306,7 @@ function CategoriesTab({
         }],
       };
       await createCategoryWithSubItems(payload);
-      toast.success("Kategori berhasil dibuat");
+      toast.success("Pemeriksaan berhasil dibuat");
       setShowForm(false);
       setLaboratoryId("");
       setSelectedAlatId("");
@@ -315,7 +315,7 @@ function CategoriesTab({
       setSubItems([""]);
       onSuccess();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal membuat kategori");
+      toast.error(err.response?.data?.message || "Gagal membuat pemeriksaan");
     } finally {
       setSaving(false);
     }
@@ -336,7 +336,7 @@ function CategoriesTab({
         onClick={() => setShowForm(true)}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FBBF24] text-[#0F172A] text-sm font-semibold hover:bg-[#FCD34D] transition-all hover:scale-[1.02] shadow-lg shadow-[#FBBF24]/20 mb-6"
       >
-        <Plus className="w-4 h-4" /> Tambah Kategori
+        <Plus className="w-4 h-4" /> Tambah Pemeriksaan
       </button>
 
       {showForm && (
@@ -348,7 +348,7 @@ function CategoriesTab({
             className="w-full max-w-2xl rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-white mb-4">Tambah Kategori Inspeksi</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Tambah Pemeriksaan</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">Laboratorium</label>
@@ -381,7 +381,7 @@ function CategoriesTab({
               )}
 
               <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">Nama Kategori</label>
+                <label className="block text-xs font-medium text-white/60 mb-1">Nama Pemeriksaan</label>
                 <input
                   value={namaKategori}
                   onChange={(e) => setNamaKategori(e.target.value)}
@@ -395,21 +395,21 @@ function CategoriesTab({
                 <textarea
                   value={deskripsi}
                   onChange={(e) => setDeskripsi(e.target.value)}
-                  placeholder="Deskripsi kategori (opsional)"
+                  placeholder="Deskripsi pemeriksaan (opsional)"
                   rows={2}
                   className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm resize-none placeholder:text-white/30"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-white/60 mb-2">Sub Item</label>
+                <label className="block text-xs font-medium text-white/60 mb-2">Sub Pemeriksaan</label>
                 <div className="space-y-2">
                   {subItems.map((s, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <input
                         value={s}
                         onChange={(e) => updateSubItem(idx, e.target.value)}
-                        placeholder="Nama Sub Item"
+                        placeholder="Nama Sub Pemeriksaan"
                         className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30"
                       />
                       <button
@@ -425,7 +425,7 @@ function CategoriesTab({
                   onClick={addSubItem}
                   className="mt-2 text-xs text-[#FBBF24] hover:text-[#FCD34D] transition-colors"
                 >
-                  + Tambah Sub Item
+                  + Tambah Sub Pemeriksaan
                 </button>
               </div>
             </div>
@@ -453,7 +453,7 @@ function CategoriesTab({
       <h3 className="text-sm font-semibold text-white mb-3">Approved Categories</h3>
       {approvedCriteria.length === 0 ? (
         <div className="p-6 text-center text-white/30 text-sm rounded-2xl bg-white/5 border border-white/10">
-          Belum ada kategori inspeksi
+          Belum ada pemeriksaan
         </div>
       ) : (
         <div className="space-y-3">
@@ -482,7 +482,7 @@ function CategoriesTab({
                     <button
                       onClick={() => onDeleteCategory(cat.id)}
                       className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors"
-                      title="Hapus kategori"
+                      title="Hapus pemeriksaan"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -493,7 +493,7 @@ function CategoriesTab({
                 {cat.deskripsi && (
                   <p className="text-xs text-white/40 mt-1">{cat.deskripsi}</p>
                 )}
-                <span className="inline-block mt-2 text-xs text-white/40">{subItemsArr.length} Sub Item</span>
+                <span className="inline-block mt-2 text-xs text-white/40">{subItemsArr.length} Sub Pemeriksaan</span>
                 {subItemsArr.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {subItemsArr.map((si) => (
@@ -536,7 +536,7 @@ function PendingTab({
         <h3 className="text-sm font-semibold text-white mb-3">Pending Categories</h3>
         {pendingCategories.length === 0 ? (
           <div className="p-6 text-center text-white/30 text-sm rounded-2xl bg-white/5 border border-white/10">
-            Tidak ada kategori pending
+            Tidak ada pemeriksaan pending
           </div>
         ) : (
           <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden">
@@ -575,7 +575,7 @@ function PendingTab({
         <h3 className="text-sm font-semibold text-white mb-3">Pending Sub Items</h3>
         {pendingSubItems.length === 0 ? (
           <div className="p-6 text-center text-white/30 text-sm rounded-2xl bg-white/5 border border-white/10">
-            Tidak ada sub item pending
+            Tidak ada sub pemeriksaan pending
           </div>
         ) : (
           <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden">
@@ -583,7 +583,7 @@ function PendingTab({
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Nama</th>
-                  <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Kategori</th>
+                  <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Pemeriksaan</th>
                   <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Status</th>
                   <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Aksi</th>
                 </tr>
@@ -619,7 +619,7 @@ function ApprovedTab({ data, onDeleteCategory }: { data: CriteriaCategory[]; onD
   if (data.length === 0) {
     return (
       <div className="p-6 text-center text-white/30 text-sm rounded-2xl bg-white/5 border border-white/10">
-        Belum ada kategori inspeksi
+        Belum ada pemeriksaan
       </div>
     );
   }
@@ -648,7 +648,7 @@ function ApprovedTab({ data, onDeleteCategory }: { data: CriteriaCategory[]; onD
                 <button
                   onClick={() => onDeleteCategory(cat.id)}
                   className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors"
-                  title="Hapus kategori"
+                  title="Hapus pemeriksaan"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -659,7 +659,7 @@ function ApprovedTab({ data, onDeleteCategory }: { data: CriteriaCategory[]; onD
             {cat.deskripsi && (
               <p className="text-xs text-white/40 mt-1">{cat.deskripsi}</p>
             )}
-            <span className="inline-block mt-2 text-xs text-white/40">{subItemsArr.length} Sub Item</span>
+            <span className="inline-block mt-2 text-xs text-white/40">{subItemsArr.length} Sub Pemeriksaan</span>
             {subItemsArr.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {subItemsArr.map((si) => (

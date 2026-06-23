@@ -19,7 +19,7 @@ const getAllUsers = async (req, res, next) => {
 
 const createUser = async (req, res, next) => {
   try {
-    const { name, nip, email, password } = req.body;
+    const { name, nip, email, password, role } = req.body;
 
     const [existingUser] = await pool.query(
       'SELECT id FROM users WHERE email = ?',
@@ -33,11 +33,26 @@ const createUser = async (req, res, next) => {
       });
     }
 
+    const allowedRoles = ['admin', 'kalab', 'plp'];
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role tidak valid'
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query(
       'INSERT INTO users (name, nip, email, password, role) VALUES (?, ?, ?, ?, ?)',
-      [name, nip || '', email, hashedPassword, 'kalab']
+      [
+        name,
+        nip || '',
+        email,
+        hashedPassword,
+        role || 'kalab'
+      ]
     );
 
     res.status(201).json({
@@ -48,7 +63,7 @@ const createUser = async (req, res, next) => {
         name,
         nip: nip || '',
         email,
-        role: 'kalab'
+        role: role || 'kalab'
       }
     });
   } catch (err) {

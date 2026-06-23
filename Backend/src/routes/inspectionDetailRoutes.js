@@ -4,7 +4,7 @@ const inspectionDetailController = require('../controllers/inspectionDetailContr
 const { verifyToken, authorizeRole } = require('../middleware/authMiddleware');
 const { validateRejectReview, handleValidationErrors } = require('../middleware/validation');
 const multerUpload = require('../middleware/multerConfig');
-const { exportInspection, exportAllCompleted } = require('../controllers/exportController');
+const { exportInspection, exportAllCompleted, checkLabInspectionsStatus, exportLabItems } = require('../controllers/exportController');
 
 // Create inspection with checklist (kalab + admin)
 router.post(
@@ -61,6 +61,13 @@ router.put(
   validateRejectReview,
   handleValidationErrors,
   inspectionDetailController.rejectMonthlyResults
+);
+
+// Get distinct (tahun, semester) pairs for a lab
+router.get(
+  '/lab/:laboratoryId/semesters',
+  verifyToken,
+  inspectionDetailController.getLabSemesters
 );
 
 // Get all pending reviews (admin only)
@@ -133,12 +140,27 @@ router.delete(
 
 // ==================== EXPORT ====================
 
+// Check lab inspections status before export
+router.get(
+  '/check-lab-status',
+  verifyToken,
+  checkLabInspectionsStatus
+);
+
 // Export single inspection to Excel
 router.get(
   '/export/:id',
   verifyToken,
   authorizeRole('admin', 'kalab'),
   exportInspection
+);
+
+// Export all items in lab to multiple sheets
+router.get(
+  '/export-lab',
+  verifyToken,
+  authorizeRole('admin', 'kalab'),
+  exportLabItems
 );
 
 // Export all completed inspections (6 months) to Excel

@@ -9,6 +9,8 @@ import { CustomSelect } from "@/components/admin/CustomSelect";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, createLab, updateLab, deleteLab } from "@/services/labs";
 import { getUsers } from "@/services/users";
+import { getPendingCategories, getPendingSubItems } from "@/services/criteria";
+import { getPendingReviews,getInspectionByItemId } from "@/services/inspections";
 import type { Lab, User as UserType } from "@/types/admin";
 
 export default function LabsPage() {
@@ -16,13 +18,15 @@ export default function LabsPage() {
   const [labs, setLabs] = useState<Lab[]>([]);
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [kalabUsers, setKalabUsers] = useState<UserType[]>([]);
+  const [plpUsers, setPlpUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingCounts, setPendingCounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showForm, setShowForm] = useState(false);
   const [editLab, setEditLab] = useState<Lab | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "" });
+  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", plp1_id: "", plp2_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -38,13 +42,26 @@ export default function LabsPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [labData, userData] = await Promise.all([
+      const [labData, userData, pendingCats, pendingRev, pendingSub] = await Promise.all([
         getLabs(),
         getUsers(),
+        getPendingCategories(),
+        getPendingReviews(),
+        getPendingSubItems(),
       ]);
       setLabs(labData);
       setAllUsers(userData);
       setKalabUsers(userData.filter((u) => u.role === "kalab"));
+      setPlpUsers(userData.filter((u) => u.role === "plp"));
+
+      const counts: Record<number, number> = {};
+      for (const cat of pendingCats) {
+        if (cat.laboratory_id) counts[cat.laboratory_id] = (counts[cat.laboratory_id] || 0) + 1;
+      }
+      for (const insp of pendingRev) {
+        if (insp.laboratory_id) counts[insp.laboratory_id] = (counts[insp.laboratory_id] || 0) + 1;
+      }
+      setPendingCounts(counts);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal memuat data");
     } finally {
@@ -56,7 +73,7 @@ export default function LabsPage() {
 
   const openCreate = () => {
     setEditLab(null);
-    setForm({ nama_lab: "", lokasi: "", kalab_id: "" });
+    setForm({ nama_lab: "", lokasi: "", kalab_id: "", plp1_id: "", plp2_id: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -67,6 +84,8 @@ export default function LabsPage() {
       nama_lab: l.nama_lab,
       lokasi: l.lokasi || "",
       kalab_id: l.kalab_id?.toString() || "",
+      plp1_id: l.plp1_id?.toString() || "",
+      plp2_id: l.plp2_id?.toString() || "",
     });
     setErrors({});
     setShowForm(true);
@@ -90,6 +109,8 @@ export default function LabsPage() {
       nama_lab: form.nama_lab.trim(),
       lokasi: form.lokasi.trim(),
       kalab_id: form.kalab_id ? Number(form.kalab_id) : undefined,
+      plp1_id: form.plp1_id ? Number(form.plp1_id) : undefined,
+      plp2_id: form.plp2_id ? Number(form.plp2_id) : undefined,
     };
     try {
       if (editLab) {
@@ -155,8 +176,15 @@ export default function LabsPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FBBF24]/10 flex items-center justify-center">
-                    <FlaskConical className="w-5 h-5 text-[#FBBF24]" strokeWidth={1.5} />
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#FBBF24]/10 flex items-center justify-center">
+                      <FlaskConical className="w-5 h-5 text-[#FBBF24]" strokeWidth={1.5} />
+                    </div>
+                    {pendingCounts[lab.id] > 0 && (
+                      <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-0.5 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg shadow-red-500/30">
+                        {pendingCounts[lab.id]}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-white truncate">{lab.nama_lab}</h3>
@@ -179,7 +207,7 @@ export default function LabsPage() {
                 </p>
                 <div className="flex items-center gap-1.5 text-xs text-white/40">
                   <Package className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  {lab.items?.length ?? 0} Item
+                  {lab.items?.length ?? 0} Peralatan
                 </div>
               </div>
             </div>
@@ -193,14 +221,23 @@ export default function LabsPage() {
                 <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Nama Lab</th>
                 <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Lokasi</th>
                 <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Kalab</th>
-                <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Jumlah Item</th>
+                <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Jumlah Peralatan</th>
                 <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {labs.map((lab) => (
                 <tr key={lab.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
-                  <td className="py-3 px-4"><span className="text-white font-medium">{lab.nama_lab}</span></td>
+                  <td className="py-3 px-4">
+                    <span className="text-white font-medium inline-flex items-center gap-2">
+                      {lab.nama_lab}
+                      {pendingCounts[lab.id] > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-0.5 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg shadow-red-500/30">
+                          {pendingCounts[lab.id]}
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td className="py-3 px-4"><span className="text-white/50">{lab.lokasi || "—"}</span></td>
                   <td className="py-3 px-4"><span className="text-white/50">{getKalabName(lab) || "—"}</span></td>
                   <td className="py-3 px-4"><span className="text-white/50">{lab.items?.length ?? 0}</span></td>
@@ -236,6 +273,7 @@ export default function LabsPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">Kepala Laboratorium</label>
+
                 <CustomSelect
                   value={form.kalab_id}
                   onChange={(v) => setForm({ ...form, kalab_id: v })}
@@ -248,7 +286,46 @@ export default function LabsPage() {
                   searchPlaceholder="Cari kalab..."
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">
+                  PLP 1
+                </label>
 
+                <CustomSelect
+                  value={form.plp1_id}
+                  onChange={(v) => setForm({ ...form, plp1_id: v })}
+                  options={[
+                    { value: "", label: "Pilih PLP 1" },
+                    ...plpUsers.map((u) => ({
+                      value: String(u.id),
+                      label: u.name,
+                    })),
+                  ]}
+                  placeholder="Pilih PLP 1"
+                  showSearch={plpUsers.length > 5}
+                  searchPlaceholder="Cari PLP..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">
+                  PLP 2
+                </label>
+
+                <CustomSelect
+                  value={form.plp2_id}
+                  onChange={(v) => setForm({ ...form, plp2_id: v })}
+                  options={[
+                    { value: "", label: "Pilih PLP 2" },
+                    ...plpUsers.map((u) => ({
+                      value: String(u.id),
+                      label: u.name,
+                    })),
+                  ]}
+                  placeholder="Pilih PLP 2"
+                  showSearch={plpUsers.length > 5}
+                  searchPlaceholder="Cari PLP..."
+                />
+              </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button onClick={() => { setShowForm(false); setErrors({}); }} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>

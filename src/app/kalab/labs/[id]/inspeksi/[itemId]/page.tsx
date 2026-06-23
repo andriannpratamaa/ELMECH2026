@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FlaskConical, Plus, Save, Upload, Package, ChevronDown, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -9,13 +9,17 @@ import { getLabs } from "@/services/labs";
 import { getCriteriaByItemId, createCategoryWithSubItems, getApprovedCriteria, updateCategoryWithSubItems } from "@/services/criteria";
 import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, updateInspectionResult, exportInspection } from "@/services/inspections";
 import { getItemsByLab } from "@/services/items";
-import type { Lab, Item, CriteriaCategory, MonthlyGroup } from "@/types/admin";
+import type { Lab, Item, CriteriaCategory, InspectionDetail, MonthlyGroup } from "@/types/admin";
+import { isPeriodPast } from "@/lib/semester";
 
 export default function KalabItemInspectionPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const labId = Number(params.id);
   const itemId = Number(params.itemId);
+  const tahun = searchParams.get('tahun') ? Number(searchParams.get('tahun')) : undefined;
+  const semester = searchParams.get('semester') || undefined;
 
   const [lab, setLab] = useState<Lab | null>(null);
   const [item, setItem] = useState<Item | null>(null);
@@ -35,7 +39,9 @@ export default function KalabItemInspectionPage() {
   const [existingInspection, setExistingInspection] = useState<{ id: number; review_status: string | null; alasan_penolakan: string | null; has_approved_month: boolean } | null>(null);
   const isRejected = existingInspection?.review_status === "REJECTED";
   const isApproved = existingInspection?.review_status === "APPROVED";
-  const categoriesLocked = existingInspection !== null && (isApproved || existingInspection.has_approved_month);
+  const readOnly = tahun !== undefined && semester !== undefined && isPeriodPast(tahun, semester as 'GANJIL' | 'GENAP');
+  const categoriesLocked = existingInspection !== null && (isApproved || existingInspection.review_status === "PENDING" || existingInspection.has_approved_month);
+  const categoryReadOnly = readOnly || categoriesLocked;
   const [monthlyResults, setMonthlyResults] = useState<MonthlyGroup[]>([]);
   const [nextBulanKe, setNextBulanKe] = useState<number | null>(null);
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
@@ -45,6 +51,8 @@ export default function KalabItemInspectionPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [savingInsp, setSavingInsp] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pendingDetail, setPendingDetail] = useState<InspectionDetail | null>(null);
+  const [pendingDetailLoading, setPendingDetailLoading] = useState(false);
 
   const toggleMonth = (bulan: number) => {
     setExpandedMonth((prev) => (prev === bulan ? null : bulan));
@@ -57,7 +65,7 @@ export default function KalabItemInspectionPage() {
         getLabs(),
         getItemsByLab(labId),
         getCriteriaByItemId(itemId),
-        getInspectionByItemId(itemId),
+        getInspectionByItemId(itemId, tahun, semester),
       ]);
       const foundLab = labsData.find((l) => l.id === labId) || null;
       setLab(foundLab);
@@ -74,7 +82,7 @@ export default function KalabItemInspectionPage() {
     }
   }, [labId, itemId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData, tahun, semester]);
 
   useEffect(() => {
     if (!existingInspection) {
@@ -85,6 +93,12 @@ export default function KalabItemInspectionPage() {
     if (!isRejected && !isApproved && !existingInspection.has_approved_month) {
       setNextBulanKe(null);
       setMonthlyResults([]);
+      setPendingDetailLoading(true);
+      getInspectionDetail(existingInspection.id).then((d) => {
+        setPendingDetail(d);
+      }).finally(() => {
+        setPendingDetailLoading(false);
+      });
       return;
     }
     (async () => {
@@ -138,8 +152,8 @@ export default function KalabItemInspectionPage() {
     })();
   }, [isRejected, isApproved, existingInspection?.id, refreshKey]);
 
-  const hasApprovedCategories = categories.some((c) => c.status === "APPROVED");
   const hasPendingCategories = categories.some((c) => c.status === "PENDING");
+  const allCategoriesApproved = categories.length > 0 && categories.every((c) => c.status === "APPROVED");
   const allSubItems = categories.flatMap((c) => c.subitems ?? c.sub_items ?? []);
   const allSelected = allSubItems.every((si) => selections[si.id]);
   const allMonthsComplete = categoriesLocked && monthlyResults.length === 6 && monthlyResults.every((m) => m.review?.review_status === "APPROVED");
@@ -207,7 +221,7 @@ export default function KalabItemInspectionPage() {
       .filter((c) => c.nama_kategori && c.subitems.length > 0);
 
     if (validCategories.length === 0) {
-      toast.error("Minimal 1 kategori dengan sub item wajib diisi");
+      toast.error("Minimal 1 pemeriksaan dengan sub pemeriksaan wajib diisi");
       return;
     }
 
@@ -230,7 +244,7 @@ export default function KalabItemInspectionPage() {
             };
           }),
         });
-        toast.success("Kategori berhasil diperbarui");
+        toast.success("Pemeriksaan berhasil diperbarui");
         setEditCategory(null);
       } else {
         await createCategoryWithSubItems({
@@ -242,20 +256,20 @@ export default function KalabItemInspectionPage() {
             subitems: c.subitems.map((s, j) => ({ nama_subitem: s, urutan: j + 1 })),
           })),
         });
-        toast.success(`${validCategories.length} kategori berhasil dibuat`);
+        toast.success(`${validCategories.length} pemeriksaan berhasil dibuat`);
       }
       setCategoryForms([{ nama_kategori: "", sub_items: [""] }]);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menyimpan kategori");
+      toast.error(err.response?.data?.message || "Gagal menyimpan pemeriksaan");
     } finally {
       setSavingCat(false);
     }
   };
 
   const handleSaveInspection = async () => {
-    if (allSubItems.length === 0) { toast.error("Tidak ada sub item untuk diperiksa"); return; }
-    if (!allSelected) { toast.error("Semua sub item wajib diisi (B/K)"); return; }
+    if (allSubItems.length === 0) { toast.error("Tidak ada sub pemeriksaan untuk diperiksa"); return; }
+    if (!allSelected) { toast.error("Semua sub pemeriksaan wajib diisi (B/K)"); return; }
 
     const results = allSubItems.map((si) => ({
       subitem_id: si.id,
@@ -345,14 +359,20 @@ export default function KalabItemInspectionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href={`/kalab/labs/${labId}`} className="p-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors">
+        <Link href={`/kalab/labs/${labId}${tahun ? `?tahun=${tahun}&semester=${semester}` : ''}`} className="p-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-display)]">Inspeksi Alat</h1>
-          <p className="text-sm text-white/40 mt-1">{lab.nama_lab} — {item.nama_barang}{item.kode_barang ? ` (${item.kode_barang})` : ""}</p>
+          <p className="text-sm text-white/40 mt-1">{lab.nama_lab} — {item.nama_barang}{item.kode_barang ? ` (${item.kode_barang})` : ""}{tahun ? ` — ${tahun} ${semester === 'GANJIL' ? 'Ganjil' : 'Genap'}` : ""}</p>
         </div>
       </div>
+
+      {readOnly && (
+        <div className="px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-300 font-medium">
+          Mode hanya-lihat — Periode {tahun} {semester === 'GANJIL' ? 'Ganjil' : 'Genap'} sudah lewat
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ───────── Card 1: Isi Inspeksi ───────── */}
@@ -415,13 +435,13 @@ export default function KalabItemInspectionPage() {
                                         <div className="flex items-center gap-1 shrink-0">
                                           <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${
                                             sel === "B" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
-                                          }`}>
-                                            <input type="radio" name={`b${bulan}-si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" /> B
+                                          } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                            <input type="radio" name={`b${bulan}-si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" disabled={readOnly} /> B
                                           </label>
                                           <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${
                                             sel === "K" ? "bg-red-500/20 text-red-400 border-red-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
-                                          }`}>
-                                            <input type="radio" name={`b${bulan}-si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" /> K
+                                          } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                            <input type="radio" name={`b${bulan}-si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" disabled={readOnly} /> K
                                           </label>
                                         </div>
                                         <span className={`text-xs ${sel ? "text-white font-medium" : "text-white/50"}`}>{si.nama_subitem}</span>
@@ -438,6 +458,7 @@ export default function KalabItemInspectionPage() {
                             <span><span className="text-red-400 font-semibold">K</span> = Kurang</span>
                           </div>
 
+                          {!readOnly && (
                           <button
                             onClick={handleSaveInspection}
                             disabled={savingInsp || !allSelected}
@@ -446,6 +467,7 @@ export default function KalabItemInspectionPage() {
                             <Save className="w-4 h-4" />
                             {savingInsp ? "Menyimpan..." : isRejectedMonth ? "Kirim Ulang" : `Simpan Bulan ke-${bulan}`}
                           </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -526,15 +548,84 @@ export default function KalabItemInspectionPage() {
               )}
             </div>
           ) : existingInspection && !isRejected && !isApproved ? (
-            <div className="p-6 text-center border border-yellow-500/30 bg-yellow-500/5 rounded-xl space-y-3">
-              <div className="text-yellow-400 text-lg font-bold">Inspeksi Sudah Dikirim</div>
-              <p className="text-sm text-white/50">Inspeksi untuk alat ini sudah pernah dikirim dan menunggu review admin.</p>
-              <button
-                onClick={() => toast.info("Detail inspeksi tersedia di halaman admin")}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-yellow-500/20 text-yellow-400 text-sm font-semibold hover:bg-yellow-500/30 transition-all"
-              >
-                <Package className="w-4 h-4" /> Lihat Detail Inspeksi
-              </button>
+            <div className="space-y-4">
+              {pendingDetailLoading ? (
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-6 w-40 rounded-xl bg-white/5" />
+                  <div className="h-20 rounded-xl bg-white/5" />
+                  <div className="h-20 rounded-xl bg-white/5" />
+                </div>
+              ) : pendingDetail ? (
+                <>
+                  <div className="rounded-xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-yellow-400 shrink-0" strokeWidth={1.5} />
+                      <div>
+                        <p className="text-sm font-semibold text-yellow-300">Inspeksi Terkirim</p>
+                        <p className="text-xs text-yellow-300/60">Menunggu review admin</p>
+                      </div>
+                    </div>
+                  </div>
+                  {(() => {
+                    const months = pendingDetail.monthly_results ?? [];
+                    const month = months[0];
+                    const cats = month?.categories ?? [];
+                    if (cats.length === 0) {
+                      return (
+                        <div className="p-6 text-center text-sm text-white/30 border border-dashed border-white/10 rounded-xl">
+                          Belum ada data inspeksi
+                        </div>
+                      );
+                    }
+                    return cats.map((cat) => {
+                      const subItems = cat.items ?? [];
+                      const bCount = subItems.filter((it) => (it.status ?? "").toUpperCase() === "B").length;
+                      const kCount = subItems.filter((it) => (it.status ?? "").toUpperCase() === "K").length;
+                      return (
+                        <div key={cat.category_id} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+                          <div className="px-4 py-3 bg-gradient-to-r from-yellow-500/5 to-transparent border-b border-white/5 flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-white">{cat.nama_kategori}</h3>
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-emerald-400 font-semibold">B: {bCount}</span>
+                              <span className="text-red-400 font-semibold">K: {kCount}</span>
+                            </div>
+                          </div>
+                          {subItems.length === 0 ? (
+                            <div className="px-4 py-3 text-xs text-white/30 italic">Tidak ada sub pemeriksaan</div>
+                          ) : (
+                            <div className="divide-y divide-white/5">
+                              {subItems.map((it) => {
+                                const status = (it.status ?? "").toUpperCase();
+                                const isB = status === "B";
+                                return (
+                                  <div key={it.id} className="px-4 py-2.5 flex items-center gap-3">
+                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ${
+                                      isB
+                                        ? "bg-emerald-500/20 text-emerald-400"
+                                        : "bg-red-500/20 text-red-400"
+                                    }`}>
+                                      {isB ? "B" : "K"}
+                                    </span>
+                                    <span className="text-sm text-white/80">{it.nama_subitem}</span>
+                                    {it.keterangan && (
+                                      <span className="text-[11px] text-white/30 ml-auto">{it.keterangan}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </>
+              ) : (
+                <div className="p-6 text-center border border-yellow-500/30 bg-yellow-500/5 rounded-xl">
+                  <div className="text-yellow-400 text-lg font-bold">Inspeksi Sudah Dikirim</div>
+                  <p className="text-sm text-white/50 mt-1">Inspeksi untuk alat ini sudah pernah dikirim dan menunggu review admin.</p>
+                </div>
+              )}
             </div>
           ) : isRejected && categories.length === 0 ? (
             <div className="p-6 text-center border border-red-500/30 bg-red-500/5 rounded-xl space-y-3">
@@ -542,11 +633,11 @@ export default function KalabItemInspectionPage() {
               {existingInspection?.alasan_penolakan && (
                 <p className="text-sm text-white/50">Alasan: {existingInspection.alasan_penolakan}</p>
               )}
-              <p className="text-xs text-white/30">Buat kategori terlebih dahulu untuk mengirim ulang.</p>
+              <p className="text-xs text-white/30">Buat pemeriksaan terlebih dahulu untuk mengirim ulang.</p>
             </div>
           ) : categories.length === 0 ? (
             <div className="p-6 text-center text-white/30 text-sm border border-dashed border-white/10 rounded-xl">
-              Belum ada kategori. Buat kategori terlebih dahulu.
+              Belum ada pemeriksaan. Buat pemeriksaan terlebih dahulu.
             </div>
           ) : (
             <div className="space-y-5">
@@ -560,15 +651,14 @@ export default function KalabItemInspectionPage() {
                 </div>
               )}
 
-              {hasPendingCategories && !hasApprovedCategories && (
+              {hasPendingCategories && !allCategoriesApproved && (
                 <div className="p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 space-y-2 text-center">
-                  <div className="text-yellow-400 text-sm font-bold">Kategori Menunggu Persetujuan</div>
-                  <p className="text-xs text-white/50">Kategori yang sudah dibuat masih menunggu persetujuan admin. Setelah disetujui, Anda dapat mengisi inspeksi.</p>
+                  <div className="text-yellow-400 text-sm font-bold">Pemeriksaan Menunggu Persetujuan</div>
+                  <p className="text-xs text-white/50">Pemeriksaan yang sudah dibuat masih menunggu persetujuan admin. Setelah disetujui, Anda dapat mengisi inspeksi.</p>
                 </div>
               )}
 
               {categories.map((cat) => {
-                const isApprovedCat = cat.status === "APPROVED";
                 const subItemsArr = cat.subitems ?? cat.sub_items ?? [];
                 return (
                   <div key={cat.id} className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
@@ -579,7 +669,7 @@ export default function KalabItemInspectionPage() {
                           <button
                             onClick={() => handleStartEdit(cat)}
                             className="p-1.5 rounded-lg hover:bg-blue-500/10 text-white/50 hover:text-blue-400 transition-colors"
-                            title="Edit kategori"
+                            title="Edit pemeriksaan"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -603,29 +693,29 @@ export default function KalabItemInspectionPage() {
                       </div>
                     )}
                     {subItemsArr.length === 0 ? (
-                      <div className="px-4 py-3 text-xs text-white/30 italic">Tidak ada sub item</div>
+                      <div className="px-4 py-3 text-xs text-white/30 italic">Tidak ada sub pemeriksaan</div>
                     ) : (
                       <div className="divide-y divide-white/5">
                         {subItemsArr.map((si) => {
                           const sel = selections[si.id] || "";
                           return (
                             <div key={si.id} className="px-4 py-2.5 flex items-center gap-3">
-                              {isApprovedCat ? (
+                              {allCategoriesApproved ? (
                                 <>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${
                                       sel === "B"
                                         ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
                                         : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
-                                    }`}>
-                                      <input type="radio" name={`si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" /> B
+                                    } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                      <input type="radio" name={`si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" disabled={readOnly} /> B
                                     </label>
                                     <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${
                                       sel === "K"
                                         ? "bg-red-500/20 text-red-400 border-red-500/50"
                                         : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
-                                    }`}>
-                                      <input type="radio" name={`si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" /> K
+                                    } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                      <input type="radio" name={`si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" disabled={readOnly} /> K
                                     </label>
                                   </div>
                                   <span className={`text-sm ${sel ? "text-white font-medium" : "text-white/60"}`}>{si.nama_subitem}</span>
@@ -647,7 +737,7 @@ export default function KalabItemInspectionPage() {
                 <span><span className="text-red-400 font-semibold">K</span> = Kurang</span>
               </div>
 
-              {(!isApproved || !nextBulanKe) && hasApprovedCategories && (
+              {!readOnly && (!isApproved || !nextBulanKe) && allCategoriesApproved && (
                 <div>
                   <label className="block text-xs font-medium text-white/60 mb-1">Catatan</label>
                   <textarea
@@ -660,7 +750,7 @@ export default function KalabItemInspectionPage() {
                 </div>
               )}
 
-              {(!isApproved || !nextBulanKe) && hasApprovedCategories && (
+              {!readOnly && (!isApproved || !nextBulanKe) && allCategoriesApproved && (
                 <div>
                   <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-dashed border-white/10 cursor-pointer hover:border-emerald-400/40 transition-all group">
                     <Upload className="w-5 h-5 text-white/30 group-hover:text-emerald-400 transition-colors" strokeWidth={1.5} />
@@ -671,7 +761,7 @@ export default function KalabItemInspectionPage() {
                 </div>
               )}
 
-              {hasApprovedCategories && (
+              {!readOnly && allCategoriesApproved && (
                 <button
                   onClick={handleSaveInspection}
                   disabled={savingInsp || !allSelected}
@@ -685,33 +775,33 @@ export default function KalabItemInspectionPage() {
           )}
         </div>
 
-        {/* ───────── Card 2: Tambah/Edit Kategori ───────── */}
-        <div className={`rounded-2xl p-6 ${categoriesLocked && !editCategory ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
+        {/* ───────── Card 2: Tambah/Edit Pemeriksaan ───────── */}
+        <div className={`rounded-2xl p-6 ${categoryReadOnly && !editCategory ? "bg-white/5 border border-white/10" : "bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20"}`}>
           <div className="flex items-center gap-3 mb-5">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoriesLocked && !editCategory ? "bg-white/5" : "bg-blue-500/10"}`}>
-              <Plus className={`w-5 h-5 ${categoriesLocked && !editCategory ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${categoryReadOnly && !editCategory ? "bg-white/5" : "bg-blue-500/10"}`}>
+              <Plus className={`w-5 h-5 ${categoryReadOnly && !editCategory ? "text-white/20" : "text-blue-400"}`} strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoriesLocked && !editCategory ? "text-white/30" : "text-white"}`}>
-                {editCategory ? "Edit Kategori" : "Tambah Kategori"}
+              <h2 className={`text-lg font-bold font-[family-name:var(--font-display)] ${categoryReadOnly && !editCategory ? "text-white/30" : "text-white"}`}>
+                {editCategory ? "Edit Pemeriksaan" : "Tambah Pemeriksaan"}
               </h2>
               <p className="text-xs text-white/40">
-                {editCategory ? "Perbarui kategori yang ditolak" : "Buat kategori dan sub item inspeksi"}
+                {editCategory ? "Perbarui pemeriksaan yang ditolak" : "Buat pemeriksaan dan sub pemeriksaan"}
               </p>
             </div>
           </div>
 
-          {categoriesLocked && !editCategory ? (
+          {categoryReadOnly && !editCategory ? (
             <div className="p-6 text-center border border-dashed border-white/10 rounded-xl space-y-2">
-              <p className="text-sm text-white/40 font-medium">Kategori Terkunci</p>
-              <p className="text-xs text-white/30">Kategori tidak dapat diubah karena inspeksi sudah berjalan.</p>
+              <p className="text-sm text-white/40 font-medium">Pemeriksaan Terkunci</p>
+              <p className="text-xs text-white/30">Pemeriksaan tidak dapat diubah karena inspeksi sudah berjalan.</p>
             </div>
           ) : (
             <div className="space-y-5">
               {categoryForms.map((cf, catIdx) => (
                 <div key={catIdx} className="rounded-xl bg-white/5 border border-white/10 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">Kategori {catIdx + 1}</span>
+                    <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">Pemeriksaan {catIdx + 1}</span>
                     {categoryForms.length > 1 && !editCategory && (
                       <button onClick={() => removeCategoryForm(catIdx)} className="text-xs text-red-400 hover:text-red-300 transition-colors">Hapus</button>
                     )}
@@ -720,25 +810,25 @@ export default function KalabItemInspectionPage() {
                   <input
                     value={cf.nama_kategori}
                     onChange={(e) => updateCategoryName(catIdx, e.target.value)}
-                    placeholder="Nama kategori"
+                    placeholder="Nama pemeriksaan"
                     className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 mb-3"
                   />
 
-                  <label className="block text-xs font-medium text-white/60 mb-2">Sub Item</label>
+                  <label className="block text-xs font-medium text-white/60 mb-2">Sub Pemeriksaan</label>
                   <div className="space-y-2">
                     {cf.sub_items.map((s, subIdx) => (
                       <div key={subIdx} className="flex items-center gap-2">
                         <input
                           value={s}
                           onChange={(e) => updateSubItem(catIdx, subIdx, e.target.value)}
-                          placeholder="Nama sub item"
+                          placeholder="Nama sub pemeriksaan"
                           className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
                         />
                         <button onClick={() => removeSubItem(catIdx, subIdx)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors text-xs shrink-0">✕</button>
                       </div>
                     ))}
                   </div>
-                  <button onClick={() => addSubItemField(catIdx)} className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors">+ Tambah Sub Item</button>
+                  <button onClick={() => addSubItemField(catIdx)} className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors">+ Tambah Sub Pemeriksaan</button>
                 </div>
               ))}
 
@@ -747,7 +837,7 @@ export default function KalabItemInspectionPage() {
                   onClick={addCategoryForm}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-white/10 text-white/50 text-sm font-medium hover:border-blue-400/40 hover:text-blue-400 transition-all"
                 >
-                  <Plus className="w-4 h-4" /> Tambah Kategori Lagi
+                  <Plus className="w-4 h-4" /> Tambah Pemeriksaan Lagi
                 </button>
               )}
 
@@ -767,7 +857,7 @@ export default function KalabItemInspectionPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
-                  {savingCat ? "Menyimpan..." : editCategory ? "Update Kategori" : "Simpan Semua Kategori"}
+                  {savingCat ? "Menyimpan..." : editCategory ? "Update Pemeriksaan" : "Simpan Semua Pemeriksaan"}
                 </button>
               </div>
             </div>

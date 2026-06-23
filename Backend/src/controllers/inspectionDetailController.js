@@ -26,12 +26,23 @@ const createInspectionWithChecklist = async (req, res, next) => {
       }
       laboratory_id = req.body.laboratory_id;
     } else {
-      laboratory_id = req.user.laboratory_id;
+      laboratory_id = req.body.laboratory_id || req.user.laboratory_id;
       if (!laboratory_id) {
         if (req.file) fs.unlinkSync(req.file.path);
         return res.status(400).json({
           success: false,
           message: 'Anda tidak terdaftar di laboratorium manapun'
+        });
+      }
+      const [labCheck] = await pool.query(
+        'SELECT id FROM laboratories WHERE id = ? AND kalab_id = ?',
+        [laboratory_id, req.user.id]
+      );
+      if (labCheck.length === 0) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(403).json({
+          success: false,
+          message: 'Anda tidak memiliki akses ke laboratorium ini'
         });
       }
     }
@@ -72,10 +83,24 @@ const createInspectionWithChecklist = async (req, res, next) => {
       });
     }
 
-    // Check if inspection already exists for this item (1 per item)
+    // Determine tahun, semester, and tanggal_inspeksi
+    const tanggal_inspeksi = req.body.tanggal_inspeksi ? new Date(req.body.tanggal_inspeksi) : new Date();
+    const tahun = tanggal_inspeksi.getFullYear();
+    const bulan = tanggal_inspeksi.getMonth() + 1;
+    let semester = req.body.semester;
+    if (!semester) {
+      semester = bulan >= 2 && bulan <= 7 ? 'GENAP' : 'GANJIL';
+    }
+    let inspectionYear = req.body.tahun ? Number(req.body.tahun) : tahun;
+    if (!req.body.tahun && !req.body.semester && bulan === 1) {
+      semester = 'GANJIL';
+      inspectionYear = tahun - 1;
+    }
+
+    // Check if inspection already exists for this item in this year+semester
     const [existing] = await pool.query(
-      'SELECT id FROM inspections WHERE item_id = ?',
-      [item_id]
+      'SELECT id FROM inspections WHERE item_id = ? AND tahun = ? AND semester = ?',
+      [item_id, inspectionYear, semester]
     );
     if (existing.length > 0) {
       if (req.file) fs.unlinkSync(req.file.path);
@@ -111,14 +136,12 @@ const createInspectionWithChecklist = async (req, res, next) => {
       });
     }
 
-    const tanggal_inspeksi = new Date();
-
     // Insert inspection
     const [inspectionResult] = await pool.query(
       `INSERT INTO inspections 
-       (laboratory_id, item_id, inspector_id, tanggal_inspeksi, catatan, foto) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [laboratory_id, item_id, inspectorId, tanggal_inspeksi, catatan, foto]
+       (laboratory_id, item_id, tahun, semester, inspector_id, tanggal_inspeksi, catatan, foto) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [laboratory_id, item_id, inspectionYear, semester, inspectorId, tanggal_inspeksi, catatan, foto]
     );
 
     const inspectionId = inspectionResult.insertId;
@@ -739,10 +762,33 @@ const rejectMonthlyResults = async (req, res, next) => {
 // Get all pending reviews (admin only)
 const getPendingReviews = async (req, res, next) => {
   try {
+    const now = new Date();
+
+    let currentYear = now.getFullYear();
+    const month = now.getMonth() + 1;
+
+    // Semester sama seperti yang kamu pakai saat createInspection
+    let currentSemester = month >= 2 && month <= 7 ? "GENAP" : "GANJIL";
+
+    // Januari masih masuk semester ganjil tahun sebelumnya
+    if (month === 1) {
+      currentSemester = "GANJIL";
+      currentYear--;
+    }
+    let whereClause =
+      'WHERE imr.review_status = ? AND i.tahun = ? AND i.semester = ?';
+
+    let params = [
+      'PENDING',
+      currentYear,
+      currentSemester
+    ];
+
+
     const [pending] = await pool.query(
       `SELECT 
         imr.*,
-        i.item_id, i.laboratory_id, i.inspector_id,
+        i.item_id, i.laboratory_id, i.inspector_id, i.tahun, i.semester,
         it.nama_barang, it.kode_barang,
         l.nama_lab,
         u.name as inspector_name,
@@ -755,9 +801,19 @@ const getPendingReviews = async (req, res, next) => {
        JOIN items it ON i.item_id = it.id
        JOIN laboratories l ON i.laboratory_id = l.id
        LEFT JOIN users u ON i.inspector_id = u.id
-       WHERE imr.review_status = 'PENDING'
-       ORDER BY imr.created_at DESC`
+       ${whereClause}
+       ORDER BY imr.created_at DESC`,
+      params
     );
+    console.log(
+  pending.map(p => ({
+    inspection: p.inspection_id,
+    tahun: p.tahun,
+    semester: p.semester,
+    bulan: p.bulan_ke,
+    barang: p.nama_barang
+  }))
+);
 
     res.status(200).json({
       success: true,
@@ -1021,8 +1077,7 @@ const getMyPendingInspections = async (req, res, next) => {
 // Get all results filtered by approval_status (admin only)
 const getResultsByStatus = async (req, res, next) => {
   try {
-    const { approval_status, inspection_id, laboratory_id } = req.query;
-
+    const { approval_status, inspection_id, laboratory_id, tahun, semester } = req.query;
     let whereClauses = [];
     let params = [];
 
@@ -1048,6 +1103,8 @@ const getResultsByStatus = async (req, res, next) => {
       params.push(laboratory_id);
     }
 
+
+
     const whereSQL = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
     const [results] = await pool.query(
@@ -1064,6 +1121,7 @@ const getResultsByStatus = async (req, res, next) => {
         ic.nama_kategori,
         i.id as inspection_id,
         i.tanggal_inspeksi,
+        i.tahun, i.semester,
         it.nama_barang,
         it.kode_barang,
         l.nama_lab,
@@ -1089,6 +1147,8 @@ const getResultsByStatus = async (req, res, next) => {
         grouped[key] = {
           inspection_id: r.inspection_id,
           bulan_ke: r.bulan_ke,
+          tahun: r.tahun,
+          semester: r.semester,
           tanggal_inspeksi: r.tanggal_inspeksi,
           nama_barang: r.nama_barang,
           kode_barang: r.kode_barang,
@@ -1124,24 +1184,56 @@ const getResultsByStatus = async (req, res, next) => {
 const checkInspectionByItemId = async (req, res, next) => {
   try {
     const { item_id } = req.params;
+    const { tahun, semester } = req.query;
+    let whereClause = 'WHERE i.item_id = ?';
+    let params = [item_id];
+    if (tahun) {
+      whereClause += ' AND i.tahun = ?';
+      params.push(Number(tahun));
+    }
+    if (semester) {
+      whereClause += ' AND i.semester = ?';
+      params.push(semester);
+    }
     const [rows] = await pool.query(
-      `SELECT i.id, imr.review_status, imr.alasan_penolakan,
-              EXISTS(SELECT 1 FROM inspection_monthly_reviews WHERE inspection_id = i.id AND review_status = 'APPROVED') as has_approved_month
-       FROM inspections i
-       LEFT JOIN inspection_monthly_reviews imr ON imr.inspection_id = i.id
-       WHERE i.item_id = ?
-       ORDER BY imr.bulan_ke DESC
-       LIMIT 1`,
-      [item_id]
+      `SELECT i.id, i.tahun, i.semester, imr.review_status, imr.alasan_penolakan,
+               EXISTS(SELECT 1 FROM inspection_monthly_reviews WHERE inspection_id = i.id AND review_status = 'APPROVED') as has_approved_month,
+               (SELECT COUNT(DISTINCT bulan_ke) FROM inspection_results WHERE inspection_id = i.id) as filled_months
+        FROM inspections i
+        LEFT JOIN inspection_monthly_reviews imr ON imr.inspection_id = i.id
+        ${whereClause}
+        ORDER BY imr.bulan_ke DESC
+        LIMIT 1`,
+      params
     );
     res.status(200).json({
       success: true,
       exists: rows.length > 0,
       inspection_id: rows.length > 0 ? rows[0].id : null,
+      tahun: rows.length > 0 ? rows[0].tahun : null,
+      semester: rows.length > 0 ? rows[0].semester : null,
       review_status: rows.length > 0 ? rows[0].review_status : null,
       alasan_penolakan: rows.length > 0 ? rows[0].alasan_penolakan : null,
-      has_approved_month: rows.length > 0 ? Boolean(rows[0].has_approved_month) : false
+      has_approved_month: rows.length > 0 ? Boolean(rows[0].has_approved_month) : false,
+      filled_months: rows.length > 0 ? Number(rows[0].filled_months) : 0
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get distinct (tahun, semester) pairs for a lab (for dropdown)
+const getLabSemesters = async (req, res, next) => {
+  try {
+    const { laboratoryId } = req.params;
+    const [rows] = await pool.query(
+      `SELECT DISTINCT i.tahun, i.semester
+       FROM inspections i
+       WHERE i.laboratory_id = ?
+       ORDER BY i.tahun DESC, i.semester DESC`,
+      [laboratoryId]
+    );
+    res.status(200).json({ success: true, data: rows });
   } catch (err) {
     next(err);
   }
@@ -1163,5 +1255,6 @@ module.exports = {
   bulkRejectResults,
   getMyPendingInspections,
   getResultsByStatus,
-  checkInspectionByItemId
+  checkInspectionByItemId,
+  getLabSemesters
 };

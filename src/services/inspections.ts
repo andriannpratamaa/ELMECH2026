@@ -3,7 +3,6 @@ import type { ApiResponse, Inspection, InspectionDetail, InspectionItem } from '
 
 function mapMonthlyItem(r: any): InspectionItem {
   const rawCondition = r.status || r.hasil_status || r.condition || r.hasil || r.overall_status || r.nilai || r.kondisi || r.bk || r.label || r.value || r.result || "";
-  console.log("[mapMonthlyItem] subitem:", r.item_name ?? r.nama_subitem, "rawCondition:", rawCondition, "r keys:", Object.keys(r));
   return {
     id: r.id,
     result_id: r.result_id ?? r.id,
@@ -118,9 +117,7 @@ export async function createInspection(data: {
 }
 
 export async function createInspectionMultipart(formData: FormData): Promise<Inspection> {
-  const res = await api.post<ApiResponse<Inspection>>('/inspections/create', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await api.post<ApiResponse<Inspection>>('/inspections/create', formData);
   return res.data.data;
 }
 
@@ -131,8 +128,22 @@ export async function updateInspectionResult(
   await api.put(`/inspections/${inspectionId}/results`, data);
 }
 
-export async function getInspectionResultsByStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
-  const res = await api.get(`/inspections/results/status?approval_status=${status}`);
+export async function getLabSemesters(laboratoryId: number): Promise<{ tahun: number; semester: string }[]> {
+  const res = await api.get<{ success: boolean; data: { tahun: number; semester: string }[] }>(
+    `/inspections/lab/${laboratoryId}/semesters`
+  );
+  return res.data.data || [];
+}
+
+export async function getInspectionResultsByStatus(
+  status: "PENDING" | "APPROVED" | "REJECTED",
+  tahun?: number,
+  semester?: string,
+) {
+  const params = new URLSearchParams({ approval_status: status });
+  if (tahun) params.set('tahun', String(tahun));
+  if (semester) params.set('semester', semester);
+  const res = await api.get(`/inspections/results/status?${params.toString()}`);
   return res.data;
 }
 
@@ -185,20 +196,77 @@ export async function exportAllInspections(): Promise<Blob> {
   return res.data;
 }
 
-export async function getInspectionByItemId(itemId: number): Promise<{
+export async function getInspectionByItemId(
+  itemId: number,
+  tahun?: number,
+  semester?: string,
+): Promise<{
   exists: boolean;
   inspection_id: number | null;
+  tahun: number | null;
+  semester: string | null;
   review_status: string | null;
   alasan_penolakan: string | null;
   has_approved_month: boolean;
+  filled_months: number;
 }> {
+  const params = new URLSearchParams();
+  if (tahun) params.set('tahun', String(tahun));
+  if (semester) params.set('semester', semester);
+  const qs = params.toString();
   const res = await api.get<{
     success: boolean;
     exists: boolean;
     inspection_id: number | null;
+    tahun: number | null;
+    semester: string | null;
     review_status: string | null;
     alasan_penolakan: string | null;
     has_approved_month: boolean;
-  }>(`/inspections/by-item/${itemId}`);
+    filled_months: number;
+  }>(`/inspections/by-item/${itemId}${qs ? '?' + qs : ''}`);
   return res.data;
+}
+
+export async function checkLabInspectionsStatus(
+  labId: number,
+  tahun: number,
+  semester: string,
+): Promise<{
+  success: boolean;
+  canExport: boolean;
+  incompleteInspections: any[];
+  totalItems: number;
+  completedItems: number;
+}> {
+  const res = await api.get<{
+    success: boolean;
+    canExport: boolean;
+    incompleteInspections: any[];
+    totalItems: number;
+    completedItems: number;
+  }>('/inspections/check-lab-status', {
+    params: { labId, tahun, semester }
+  });
+  return res.data;
+}
+
+export async function exportLabItems(
+  labId: number,
+  tahun: number,
+  semester: string,
+): Promise<void> {
+  const response = await api.get('/inspections/export-lab', {
+    params: { labId, tahun, semester },
+    responseType: 'blob'
+  });
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Export_Lab_${labId}_${tahun}_${semester}.xlsx`);
+  document.body.appendChild(link);
+  link.click();
+  link.parentElement?.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }

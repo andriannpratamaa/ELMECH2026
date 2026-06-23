@@ -399,11 +399,11 @@ const getPendingCategories = async (req, res, next) => {
 const getPendingSubitems = async (req, res, next) => {
   try {
     const [subitems] = await pool.query(
-      `SELECT si.*, ic.nama_kategori, u.name as created_by_name
-       FROM inspection_subitems si
-       JOIN inspection_categories ic ON si.category_id = ic.id
-       LEFT JOIN users u ON si.created_by = u.id
-       WHERE si.status = 'PENDING'
+       `SELECT si.*, ic.nama_kategori, ic.laboratory_id, u.name as created_by_name
+        FROM inspection_subitems si
+        JOIN inspection_categories ic ON si.category_id = ic.id
+        LEFT JOIN users u ON si.created_by = u.id
+        WHERE si.status = 'PENDING'
        ORDER BY si.created_at DESC`
     );
 

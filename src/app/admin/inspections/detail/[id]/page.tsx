@@ -138,10 +138,10 @@ export default function InspectionDetailPage() {
     setApprovingCategory(catName);
     try {
       await bulkApproveResults({ ids });
-      toast.success(`Kategori "${catName}" berhasil disetujui`);
+      toast.success(`Pemeriksaan "${catName}" berhasil disetujui`);
       fetch();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menyetujui kategori");
+      toast.error(err.response?.data?.message || "Gagal menyetujui pemeriksaan");
     } finally {
       setApprovingCategory(null);
     }
@@ -151,12 +151,12 @@ export default function InspectionDetailPage() {
     if (!rejectCategoryTarget) return;
     try {
       await bulkRejectResults({ ids: rejectCategoryTarget.ids, alasan_penolakan: rejectCategoryReason });
-      toast.success(`Kategori "${rejectCategoryTarget.name}" berhasil ditolak`);
+      toast.success(`Pemeriksaan "${rejectCategoryTarget.name}" berhasil ditolak`);
       setRejectCategoryTarget(null);
       setRejectCategoryReason("");
       fetch();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal menolak kategori");
+      toast.error(err.response?.data?.message || "Gagal menolak pemeriksaan");
     }
   };
 
@@ -274,7 +274,7 @@ export default function InspectionDetailPage() {
 
       {/* Info */}
       <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
           <div>
             <p className="text-xs text-white/40 mb-1">Laboratorium</p>
             <p className="text-sm font-medium text-white">{detail.lab_name || "—"}</p>
@@ -290,6 +290,10 @@ export default function InspectionDetailPage() {
           <div>
             <p className="text-xs text-white/40 mb-1">Inspector</p>
             <p className="text-sm font-medium text-white">{detail.inspector_name || "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-white/40 mb-1">Periode</p>
+            <p className="text-sm font-medium text-white">{detail.tahun ? `${detail.tahun} ${detail.semester === 'GANJIL' ? 'Ganjil' : 'Genap'}` : "—"}</p>
           </div>
         </div>
         {detail.catatan && (
@@ -337,8 +341,8 @@ export default function InspectionDetailPage() {
                   <div className="flex items-center gap-3 text-[11px] text-white/40">
                     <span><span className="text-emerald-400">{bCount}</span> B</span>
                     <span><span className="text-red-400">{kCount}</span> K</span>
-                    <span>{catCount} Kategori</span>
-                    <span>{items.length} Sub Item</span>
+                    <span>{catCount} Pemeriksaan</span>
+                    <span>{items.length} Sub Pemeriksaan</span>
                   </div>
                 </div>
                 {!isApproved && (
@@ -394,14 +398,14 @@ export default function InspectionDetailPage() {
                                 onClick={() => handleApproveCategory(bulan_ke, catName, catResultIds)}
                                 disabled={isCatApproving}
                                 className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 transition-all disabled:opacity-40"
-                                title="Setujui kategori"
+                                title="Setujui pemeriksaan"
                               >
                                 {isCatApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                               </button>
                               <button
                                 onClick={() => setRejectCategoryTarget({ bulan: bulan_ke, name: catName, ids: catResultIds })}
                                 className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all"
-                                title="Tolak kategori"
+                                title="Tolak pemeriksaan"
                               >
                                 <XCircle className="w-3.5 h-3.5" />
                               </button>
@@ -413,7 +417,7 @@ export default function InspectionDetailPage() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-white/5">
-                                <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4">Sub Item</th>
+                                <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4">Sub Pemeriksaan</th>
                                 <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4 w-16">Status</th>
                                 <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-2 px-4 w-28">Review</th>
                               </tr>
@@ -503,8 +507,8 @@ export default function InspectionDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Kategori</th>
-                    <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Sub Item</th>
+                    <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Pemeriksaan</th>
+                    <th className="text-left text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4">Sub Pemeriksaan</th>
                     <th className="text-center text-xs font-semibold text-white/40 uppercase tracking-wider py-3 px-4 w-16">Status</th>
                   </tr>
                 </thead>
@@ -569,8 +573,8 @@ export default function InspectionDetailPage() {
       {rejectItemTarget != null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setRejectItemTarget(null); setRejectItemReason(""); }}>
           <div className="w-full max-w-sm rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-2">Tolak Item</h3>
-            <p className="text-sm text-white/50 mb-4">Alasan penolakan untuk item ini.</p>
+            <h3 className="text-lg font-semibold text-white mb-2">Tolak Peralatan</h3>
+            <p className="text-sm text-white/50 mb-4">Alasan penolakan untuk peralatan ini.</p>
             <textarea
               value={rejectItemReason}
               onChange={(e) => setRejectItemReason(e.target.value)}
@@ -600,9 +604,9 @@ export default function InspectionDetailPage() {
       {rejectCategoryTarget != null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setRejectCategoryTarget(null); setRejectCategoryReason(""); }}>
           <div className="w-full max-w-sm rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-2">Tolak Kategori</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Tolak Pemeriksaan</h3>
             <p className="text-sm text-white/50 mb-4">
-              Tolak semua item di kategori <span className="font-semibold text-white">{rejectCategoryTarget.name}</span>?
+              Tolak semua item di pemeriksaan <span className="font-semibold text-white">{rejectCategoryTarget.name}</span>?
             </p>
             <textarea
               value={rejectCategoryReason}
