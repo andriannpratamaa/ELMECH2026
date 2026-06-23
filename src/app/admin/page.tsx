@@ -64,8 +64,8 @@ export default function AdminLoginPage() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FBBF24] to-[#FCD34D] flex items-center justify-center mx-auto mb-5 shadow-lg">
                 <GraduationCap className="w-8 h-8 text-[#0F172A]" strokeWidth={1.5} />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-display)]">Admin Portal</h1>
-              <p className="text-sm text-white/50 mt-2">Masuk untuk mengelola konten website</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-display)]">Login Portal</h1>
+              <p className="text-sm text-white/50 mt-2">Masuk untuk mengelola inspeksi laboratorium</p>
             </motion.div>
 
             {success ? (
@@ -108,11 +108,6 @@ export default function AdminLoginPage() {
                     </button>
                   </motion.div>
                 </form>
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.6 }} className="mt-6 pt-6 border-t border-white/10 text-center">
-                  <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors">
-                    <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Website
-                  </Link>
-                </motion.div>
               </>
             )}
           </div>
