@@ -20,8 +20,16 @@ export interface Lab {
   id: number;
   nama_lab: string;
   lokasi?: string;
-  kalab_id?: number;
+
+  kalab_id?: number | null;
   kalab_name?: string;
+
+  plp1_id?: number | null;
+  plp2_id?: number | null;
+
+  plp1_name?: string;
+  plp2_name?: string;
+
   items_count?: number;
   item_ids?: string;
   items?: Item[];

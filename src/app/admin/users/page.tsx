@@ -20,7 +20,7 @@ export default function UsersPage() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", nip: "", role: "kalab", password: "",  plp1_id: "", plp2_id: "", laboratory_id: "" });
+  const [form, setForm] = useState({ name: "", email: "", nip: "", role: "kalab", password: "", laboratory_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);

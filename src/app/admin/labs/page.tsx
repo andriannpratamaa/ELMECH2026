@@ -84,6 +84,7 @@ export default function LabsPage() {
       nama_lab: l.nama_lab,
       lokasi: l.lokasi || "",
       kalab_id: l.kalab_id?.toString() || "",
+      
       plp1_id: l.plp1_id?.toString() || "",
       plp2_id: l.plp2_id?.toString() || "",
     });
