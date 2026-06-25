@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'; // ganti IP kalau backend di laptop lain
+console.log("API BASE =", API_BASE);
 
 const api = axios.create({
   baseURL: API_BASE,

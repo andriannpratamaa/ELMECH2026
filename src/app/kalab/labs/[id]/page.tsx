@@ -457,7 +457,7 @@ export default function KalabLabDetailPage() {
               </div>
 
               <a
-                href={`http://localhost:5000${uploadedFile}`}
+                href={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${uploadedFile}`}
                 target="_blank"
                 className="text-xs text-emerald-400 underline"
               >
@@ -481,7 +481,7 @@ export default function KalabLabDetailPage() {
                 setUploading(true);
 
                 try {
-                  const res = await fetch("http://localhost:5000/api/lab/upload", {
+                  const res = await fetch("${process.env.NEXT_PUBLIC_API_URL}/lab/upload", {
                     method: "POST",
                     body: formData,
                   });
