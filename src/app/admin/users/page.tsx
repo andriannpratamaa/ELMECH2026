@@ -13,6 +13,7 @@ import { getLabs } from "@/services/labs";
 import type { User, Lab } from "@/types/admin";
 
 export default function UsersPage() {
+  const [highlightCancel, setHighlightCancel] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [labs, setLabs] = useState<Lab[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +143,7 @@ export default function UsersPage() {
       <DataTable columns={columns} data={users} searchKey="name" searchPlaceholder="Cari nama/email..." isLoading={loading} emptyMessage="Belum ada user" />
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => !saving && setShowForm(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => {setHighlightCancel(true); setTimeout(() => {setHighlightCancel(false);}, 700);}}>
           <div className="w-full max-w-lg rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">{editUser ? "Edit User" : "Tambah User"}</h2>
             <div className="space-y-3">
@@ -201,7 +202,7 @@ export default function UsersPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-all">Batal</button>
+              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30": "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#FBBF24] text-[#0F172A] hover:bg-[#FCD34D] transition-all disabled:opacity-50">
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>

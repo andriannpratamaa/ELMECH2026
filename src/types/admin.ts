@@ -48,18 +48,6 @@ export interface Item {
   created_at?: string;
 }
 
-export interface Schedule {
-  id: number;
-  laboratory_id?: number;
-  lab_name?: string;
-  tanggal?: string;
-  keterangan?: string;
-  status?: string;
-  items_count?: number;
-  items?: Item[];
-  created_at?: string;
-}
-
 export interface Inspection {
   id: number;
   inspection_id?: number;

@@ -12,6 +12,7 @@ import { getUsers } from "@/services/users";
 import { getPendingCategories, getPendingSubItems } from "@/services/criteria";
 import { getPendingReviews,getInspectionByItemId } from "@/services/inspections";
 import type { Lab, User as UserType } from "@/types/admin";
+import { useNotification } from "@/contexts/NotificationContext";
 
 export default function LabsPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function LabsPage() {
   const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", plp1_id: "", plp2_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
+  const [highlightCancel, setHighlightCancel] = useState(false);
   const usersMap = new Map<number, UserType>();
   allUsers.forEach((u) => usersMap.set(u.id, u));
 
@@ -259,7 +260,7 @@ export default function LabsPage() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => { if (!saving) { setShowForm(false); setErrors({}); } }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => {setHighlightCancel(true);setTimeout(() => {setHighlightCancel(false);}, 700);}}>
           <div className="w-full max-w-lg rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">{editLab ? "Edit Lab" : "Tambah Lab"}</h2>
             <div className="space-y-3">
@@ -329,7 +330,7 @@ export default function LabsPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={() => { setShowForm(false); setErrors({}); }} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">Batal</button>
+              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30": "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#FBBF24] text-[#0F172A] hover:bg-[#FCD34D] transition-all disabled:opacity-50">
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>

@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       const role = result.user?.role;
       if (role === "admin") {
         setTimeout(() => router.push("/admin/dashboard"), 1500);
-      } else if (role === "kalab") {
+      } else if (role === "kalab" ) {
         setTimeout(() => router.push("/kalab/dashboard"), 1500);
       } else {
         setError("Role tidak dikenali");
@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0F172A]">
       <motion.div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1562774053-701939374585?w=1920&q=80")' }}
+        style={{ backgroundImage: 'url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQtI0nTXguVbninQaaubRG37ACRPUzZGvKa-uLgs_XD0g&s=10")' }}
         animate={{ scale: [1, 1.06] }}
         transition={{ duration: 20, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
       />

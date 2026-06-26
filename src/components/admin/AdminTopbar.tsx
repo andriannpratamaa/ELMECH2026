@@ -11,7 +11,6 @@ const PATH_LABELS: Record<string, string> = {
   "/admin/users": "Users",
   "/admin/labs": "Laboratories",
   "/admin/items": "Peralatan",
-  "/admin/schedules": "Schedules",
   "/admin/inspections": "Inspections",
   "/admin/criteria": "Criteria",
   "/admin/profile": "Profile",
@@ -39,23 +38,9 @@ export default function AdminTopbar({ onMenuClick }: { onMenuClick: () => void }
             <ChevronRight className="w-3 h-3" />
             <span className="text-white/70 font-medium">{currentLabel}</span>
           </div>
-
-          <div className="relative hidden sm:block ml-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input
-              type="text"
-              placeholder="Cari..."
-              className="w-56 lg:w-72 pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40 focus:border-[#FBBF24]/40 transition-all"
-            />
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="relative p-2 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#0F172A]" />
-          </button>
-
           <div className="relative">
             <button onClick={() => setShowMenu(!showMenu)} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FBBF24] to-[#FCD34D] flex items-center justify-center text-xs font-bold text-[#0F172A]">

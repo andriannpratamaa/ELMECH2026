@@ -9,32 +9,28 @@ import LoadingSkeleton from "@/components/admin/LoadingSkeleton";
 import { getUsers } from "@/services/users";
 import { getLabs } from "@/services/labs";
 import { getItems } from "@/services/items";
-import { getSchedules } from "@/services/schedules";
 import { getPendingReviews } from "@/services/inspections";
-import { getPendingCategories } from "@/services/criteria";
 import type { Profile } from "@/types/admin";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    users: "—", labs: "—", items: "—", schedules: "—", inspections: "—", criteria: "—"
+    users: "—", labs: "—", items: "—", inspections: "—"
   });
 
   useEffect(() => {
     setUser(getUser());
     const fetchStats = async () => {
       try {
-        const [users, labs, items, schedules, inspections, criteria] = await Promise.all([
-          getUsers(), getLabs(), getItems(), getSchedules(), getPendingReviews(), getPendingCategories()
+        const [users, labs, items, inspections] = await Promise.all([
+          getUsers(), getLabs(), getItems(), getPendingReviews()
         ]);
         setStats({
           users: users.length.toString(),
           labs: labs.length.toString(),
           items: items.length.toString(),
-          schedules: schedules.length.toString(),
           inspections: inspections.length.toString(),
-          criteria: criteria.length.toString(),
         });
       } catch (err: any) {
         toast.error(err.response?.data?.message || "Gagal memuat data dashboard");
@@ -49,10 +45,8 @@ export default function DashboardPage() {
     { icon: Users, label: "Total Users", value: stats.users },
     { icon: FlaskConical, label: "Total Laboratories", value: stats.labs },
     { icon: Package, label: "Total Alat", value: stats.items },
-    { icon: CalendarClock, label: "Total Schedules", value: stats.schedules },
-    { icon: ClipboardCheck, label: "Pending Inspections", value: stats.inspections },
-    { icon: CheckSquare, label: "Pending Criteria", value: stats.criteria },
-  ];
+    { icon: ClipboardCheck, label: "Pending Inspections", value: stats.inspections }
+  ];  
 
   return (
     <div className="space-y-6">

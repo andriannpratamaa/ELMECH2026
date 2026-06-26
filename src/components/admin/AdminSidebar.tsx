@@ -10,55 +10,40 @@ import {
 import { removeToken } from "@/services/auth";
 import { useEffect, useState } from "react";
 import { getAdminNotifications } from "@/services/notifications";
+import { useNotification } from "@/contexts/NotificationContext";
 const MENU = [
-  { section: null, items: [
-    { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  ]},
-  { section: "Master Data", items: [
-    { href: "/admin/users", icon: Users, label: "Users" },
-    { href: "/admin/labs", icon: FlaskConical, label: "Labs" },
-    { href: "/admin/items", icon: Package, label: "Alat" },
-    { href: "/admin/schedules", icon: CalendarClock, label: "Schedules" },
-  ]},
-  { section: "Operations", items: [
-    { href: "/admin/inspections", icon: ClipboardCheck, label: "Inspections" },
-    { href: "/admin/criteria", icon: CheckSquare, label: "Criteria" },
-  ]},
-  { section: "Account", items: [
-    { href: "/admin/profile", icon: UserCircle, label: "Profile" },
-  ]},
+  {
+    section: null, items: [
+      { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    ]
+  },
+  {
+    section: "Master Data", items: [
+      { href: "/admin/users", icon: Users, label: "Users" },
+      { href: "/admin/labs", icon: FlaskConical, label: "Labs" },
+      { href: "/admin/items", icon: Package, label: "Alat" },
+    ]
+  },
+  {
+    section: "Account", items: [
+      { href: "/admin/profile", icon: UserCircle, label: "Profile" },
+    ]
+  },
 ];
 
 export default function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [notificationCount, setNotificationCount] = useState(0);
   const handleLogout = () => {
     removeToken();
     router.push("/admin");
   };
+  const { pendingLabCount } = useNotification();
 
   const isActive = (href: string) => {
     if (href === '/admin/dashboard') return pathname === href;
     return pathname.startsWith(href);
   };
-
-useEffect(() => {
-  const fetchNotifications = async () => {
-    try {
-      const data = await getAdminNotifications();
-
-      console.log("DATA NOTIF:", data);
-console.log("JUMLAH:", data.length);
-      setNotificationCount(data.length);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchNotifications();
-}, []);
-console.log("Total Notifikasi :", notificationCount);
 
   const sidebar = (
     <aside className="h-full flex flex-col bg-[#0F172A] border-r border-white/5">
@@ -91,14 +76,24 @@ console.log("Total Notifikasi :", notificationCount);
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      active
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${active
                         ? "bg-[#FBBF24]/10 text-[#FBBF24]"
                         : "text-white/50 hover:text-white hover:bg-white/5"
-                    }`}
+                      }`}
                   >
-                    <Icon className="w-4.5 h-4.5 flex-shrink-0" strokeWidth={1.5} />
-                    <span>{item.label}</span>
+                    <div className="flex items-center w-full">
+                      <Icon className="w-4.5 h-4.5 flex-shrink-0" strokeWidth={1.5} />
+
+                      <span className="ml-3 flex-1">
+                        {item.label}
+                      </span>
+
+                      {item.href === "/admin/labs" && pendingLabCount > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-red-500/30">
+                          {pendingLabCount}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
