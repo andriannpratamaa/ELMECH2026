@@ -7,6 +7,7 @@ import { useEffect, useState as useStateImport } from "react";
 import { useRouter } from "next/navigation";
 import KalabSidebar from "@/components/admin/KalabSidebar";
 import KalabTopbar from "@/components/admin/KalabTopbar";
+import { KalabNotificationProvider } from "@/contexts/KalabNotificationContext";
 
 function KalabWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -42,15 +43,24 @@ export default function KalabRootLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  return (
-    <KalabWrapper>
+return (
+  <KalabWrapper>
+    <KalabNotificationProvider>
       <div className="min-h-screen bg-[#0F172A] text-white">
-        <KalabSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <KalabTopbar onMenuClick={() => setSidebarOpen(true)} />
+        <KalabSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+
+        <KalabTopbar
+          onMenuClick={() => setSidebarOpen(true)}
+        />
+
         <main className="min-h-screen pt-20 lg:ml-60 px-4 sm:px-6 lg:px-8 pb-6">
           {children}
         </main>
       </div>
-    </KalabWrapper>
-  );
+    </KalabNotificationProvider>
+  </KalabWrapper>
+);
 }

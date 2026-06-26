@@ -12,7 +12,7 @@ import { getUsers } from "@/services/users";
 import { getPendingCategories, getPendingSubItems } from "@/services/criteria";
 import { getPendingReviews,getInspectionByItemId } from "@/services/inspections";
 import type { Lab, User as UserType } from "@/types/admin";
-import { useNotification } from "@/contexts/NotificationContext";
+import { useAdminNotification } from "@/contexts/AdminNotificationContext";
 
 export default function LabsPage() {
   const router = useRouter();

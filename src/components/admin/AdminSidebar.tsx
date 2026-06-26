@@ -10,7 +10,7 @@ import {
 import { removeToken } from "@/services/auth";
 import { useEffect, useState } from "react";
 import { getAdminNotifications } from "@/services/notifications";
-import { useNotification } from "@/contexts/NotificationContext";
+import { useAdminNotification } from "@/contexts/AdminNotificationContext";
 const MENU = [
   {
     section: null, items: [
@@ -38,7 +38,7 @@ export default function AdminSidebar({ open, onClose }: { open: boolean; onClose
     removeToken();
     router.push("/admin");
   };
-  const { pendingLabCount } = useNotification();
+  const { pendingLabCount } = useAdminNotification();
 
   const isActive = (href: string) => {
     if (href === '/admin/dashboard') return pathname === href;

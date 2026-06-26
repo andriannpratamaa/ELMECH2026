@@ -7,17 +7,24 @@ import {
   LayoutDashboard, Package, LogOut, X, GraduationCap, UserCircle,
 } from "lucide-react";
 import { removeToken } from "@/services/auth";
+import { useKalabNotification } from "@/contexts/KalabNotificationContext";
 
 const MENU = [
-  { section: null, items: [
-    { href: "/kalab/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  ]},
-  { section: "Operations", items: [
-    { href: "/kalab/labs", icon: GraduationCap, label: "Lab Saya" },
-  ]},
-  { section: "Akun", items: [
-    { href: "/kalab/profile", icon: UserCircle, label: "Profile" },
-  ]},
+  {
+    section: null, items: [
+      { href: "/kalab/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    ]
+  },
+  {
+    section: "Operations", items: [
+      { href: "/kalab/labs", icon: GraduationCap, label: "Lab Saya" },
+    ]
+  },
+  {
+    section: "Akun", items: [
+      { href: "/kalab/profile", icon: UserCircle, label: "Profile" },
+    ]
+  },
 ];
 
 export default function KalabSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -33,6 +40,7 @@ export default function KalabSidebar({ open, onClose }: { open: boolean; onClose
     if (href === "/kalab/dashboard") return pathname === href;
     return pathname.startsWith(href);
   };
+  const { pendingLabCount } = useKalabNotification();
 
   const sidebar = (
     <aside className="h-full flex flex-col bg-[#0F172A] border-r border-white/5">
@@ -65,14 +73,20 @@ export default function KalabSidebar({ open, onClose }: { open: boolean; onClose
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      active
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${active
                         ? "bg-blue-500/10 text-blue-400"
                         : "text-white/50 hover:text-white hover:bg-white/5"
-                    }`}
+                      }`}
                   >
                     <Icon className="w-4.5 h-4.5 flex-shrink-0" strokeWidth={1.5} />
-                    <span>{item.label}</span>
+
+                    <span className="flex-1">{item.label}</span>
+
+                    {item.href === "/kalab/labs" && pendingLabCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-red-500/30">
+                        {pendingLabCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
