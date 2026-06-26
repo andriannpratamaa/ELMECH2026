@@ -11,7 +11,7 @@ import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, 
 import { getItemsByLab } from "@/services/items";
 import type { Lab, Item, CriteriaCategory, InspectionDetail, MonthlyGroup } from "@/types/admin";
 import { isPeriodPast } from "@/lib/semester";
-
+import { useAdminNotification } from "@/contexts/AdminNotificationContext";
 export default function ItemInspectionPage() {
   const params = useParams();
   const router = useRouter();
@@ -25,6 +25,7 @@ export default function ItemInspectionPage() {
   const [item, setItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<CriteriaCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { refreshNotifications } = useAdminNotification();
 
   // Category form
   interface CategoryFormItem {
@@ -209,6 +210,9 @@ export default function ItemInspectionPage() {
     }
     try {
       await approveCategory(cat.id);
+
+      await refreshNotifications();
+
       toast.success("Pemeriksaan berhasil disetujui");
       fetchData();
     } catch (err: any) {
@@ -225,7 +229,11 @@ export default function ItemInspectionPage() {
     if (!rejectTarget) return;
     try {
       await rejectCategory(rejectTarget.id, rejectReason || undefined);
+
+      await refreshNotifications();
+
       toast.success("Pemeriksaan ditolak");
+
       setRejectTarget(null);
       setRejectReason("");
       fetchData();
@@ -370,7 +378,11 @@ export default function ItemInspectionPage() {
     setApprovingMonth(bulanKe);
     try {
       await approveMonth(existingInspection!.id, bulanKe);
+
+      await refreshNotifications();
+
       toast.success(`Bulan ke-${bulanKe} berhasil disetujui`);
+
       setRefreshKey((k) => k + 1);
       fetchData();
     } catch (err: any) {
@@ -388,7 +400,11 @@ export default function ItemInspectionPage() {
     if (rejectMonthTarget == null) return;
     try {
       await rejectMonth(existingInspection!.id, rejectMonthTarget, rejectMonthReason || undefined);
+
+      await refreshNotifications();
+
       toast.success(`Bulan ke-${rejectMonthTarget} berhasil ditolak`);
+
       setRejectMonthTarget(null);
       setRejectMonthReason("");
       setRefreshKey((k) => k + 1);

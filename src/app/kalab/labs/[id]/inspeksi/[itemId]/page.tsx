@@ -11,6 +11,7 @@ import { createInspectionMultipart, getInspectionByItemId, getInspectionDetail, 
 import { getItemsByLab } from "@/services/items";
 import type { Lab, Item, CriteriaCategory, InspectionDetail, MonthlyGroup } from "@/types/admin";
 import { isPeriodPast } from "@/lib/semester";
+import { useKalabNotification } from "@/contexts/KalabNotificationContext";
 
 export default function KalabItemInspectionPage() {
   const params = useParams();
@@ -25,6 +26,7 @@ export default function KalabItemInspectionPage() {
   const [item, setItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<CriteriaCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { refreshNotifications } = useKalabNotification();
 
   interface CategoryFormItem {
     nama_kategori: string;
@@ -284,12 +286,18 @@ export default function KalabItemInspectionPage() {
           bulan_ke: nextBulanKe ?? 1,
           results,
         });
+
+        await refreshNotifications();
+
         toast.success("Inspeksi berhasil diperbarui dan dikirim ulang");
       } else if (existingInspection && nextBulanKe) {
         await updateInspectionResult(existingInspection.id, {
           bulan_ke: nextBulanKe,
           results,
         });
+
+        await refreshNotifications();
+
         toast.success(`Inspeksi bulan ke-${nextBulanKe} berhasil disimpan`);
       } else {
         const formData = new FormData();
@@ -300,6 +308,9 @@ export default function KalabItemInspectionPage() {
         if (foto) formData.append("foto", foto);
 
         await createInspectionMultipart(formData);
+
+        await refreshNotifications();
+
         toast.success("Inspeksi berhasil disimpan");
       }
       setSelections({});
@@ -433,14 +444,12 @@ export default function KalabItemInspectionPage() {
                                     return (
                                       <div key={si.id} className="flex items-center gap-3 py-1">
                                         <div className="flex items-center gap-1 shrink-0">
-                                          <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${
-                                            sel === "B" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
-                                          } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                          <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${sel === "B" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
+                                            } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
                                             <input type="radio" name={`b${bulan}-si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" disabled={readOnly} /> B
                                           </label>
-                                          <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${
-                                            sel === "K" ? "bg-red-500/20 text-red-400 border-red-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
-                                          } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                          <label className={`inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer transition-all text-xs font-bold border-2 ${sel === "K" ? "bg-red-500/20 text-red-400 border-red-500/50" : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
+                                            } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
                                             <input type="radio" name={`b${bulan}-si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" disabled={readOnly} /> K
                                           </label>
                                         </div>
@@ -459,14 +468,14 @@ export default function KalabItemInspectionPage() {
                           </div>
 
                           {!readOnly && (
-                          <button
-                            onClick={handleSaveInspection}
-                            disabled={savingInsp || !allSelected}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition-all disabled:opacity-40"
-                          >
-                            <Save className="w-4 h-4" />
-                            {savingInsp ? "Menyimpan..." : isRejectedMonth ? "Kirim Ulang" : `Simpan Bulan ke-${bulan}`}
-                          </button>
+                            <button
+                              onClick={handleSaveInspection}
+                              disabled={savingInsp || !allSelected}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition-all disabled:opacity-40"
+                            >
+                              <Save className="w-4 h-4" />
+                              {savingInsp ? "Menyimpan..." : isRejectedMonth ? "Kirim Ulang" : `Simpan Bulan ke-${bulan}`}
+                            </button>
                           )}
                         </div>
                       )}
@@ -479,22 +488,20 @@ export default function KalabItemInspectionPage() {
                   const baik = monthData.statistics?.baik ?? monthData.categories.reduce((s, c) => s + c.items.filter((it) => it.status === "B").length, 0);
                   const kurang = monthData.statistics?.kurang ?? monthData.categories.reduce((s, c) => s + c.items.filter((it) => it.status === "K").length, 0);
                   return (
-                    <div key={bulan} className={`rounded-xl border overflow-hidden ${
-                      revStatus === "APPROVED" ? "border-emerald-500/20 bg-emerald-500/5" :
+                    <div key={bulan} className={`rounded-xl border overflow-hidden ${revStatus === "APPROVED" ? "border-emerald-500/20 bg-emerald-500/5" :
                       revStatus === "REJECTED" ? "border-red-500/20 bg-red-500/5" :
-                      "border-yellow-500/20 bg-yellow-500/5"
-                    }`}>
+                        "border-yellow-500/20 bg-yellow-500/5"
+                      }`}>
                       <div
                         onClick={() => toggleMonth(bulan)}
                         className="px-4 py-3 flex items-center justify-between border-b border-white/5 cursor-pointer select-none"
                       >
                         <h3 className="text-sm font-bold text-white">Bulan ke-{bulan}</h3>
                         <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                            revStatus === "APPROVED" ? "bg-emerald-500/20 text-emerald-400" :
+                          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${revStatus === "APPROVED" ? "bg-emerald-500/20 text-emerald-400" :
                             revStatus === "REJECTED" ? "bg-red-500/20 text-red-400" :
-                            "bg-yellow-500/20 text-yellow-400"
-                          }`}>
+                              "bg-yellow-500/20 text-yellow-400"
+                            }`}>
                             {revStatus === "APPROVED" ? "Disetujui" : revStatus === "REJECTED" ? "Ditolak" : "Menunggu Review"}
                           </span>
                           <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${isOpen ? "" : "-rotate-90"}`} strokeWidth={1.5} />
@@ -599,11 +606,10 @@ export default function KalabItemInspectionPage() {
                                 const isB = status === "B";
                                 return (
                                   <div key={it.id} className="px-4 py-2.5 flex items-center gap-3">
-                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ${
-                                      isB
-                                        ? "bg-emerald-500/20 text-emerald-400"
-                                        : "bg-red-500/20 text-red-400"
-                                    }`}>
+                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ${isB
+                                      ? "bg-emerald-500/20 text-emerald-400"
+                                      : "bg-red-500/20 text-red-400"
+                                      }`}>
                                       {isB ? "B" : "K"}
                                     </span>
                                     <span className="text-sm text-white/80">{it.nama_subitem}</span>
@@ -675,13 +681,12 @@ export default function KalabItemInspectionPage() {
                           </button>
                         )}
                         {cat.status && (
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            cat.status === "APPROVED"
-                              ? "bg-emerald-500/20 text-emerald-400"
-                              : cat.status === "PENDING"
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cat.status === "APPROVED"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : cat.status === "PENDING"
                               ? "bg-yellow-500/20 text-yellow-400"
                               : "bg-red-500/20 text-red-400"
-                          }`}>
+                            }`}>
                             {cat.status === "APPROVED" ? "Disetujui" : cat.status === "PENDING" ? "Menunggu" : "Ditolak"}
                           </span>
                         )}
@@ -703,18 +708,16 @@ export default function KalabItemInspectionPage() {
                               {allCategoriesApproved ? (
                                 <>
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${
-                                      sel === "B"
-                                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
-                                        : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
-                                    } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                    <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${sel === "B"
+                                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                                      : "bg-white/5 text-white/30 border-white/10 hover:border-emerald-500/30 hover:text-emerald-400"
+                                      } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
                                       <input type="radio" name={`si-${si.id}`} value="B" checked={sel === "B"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "B" }))} className="sr-only" disabled={readOnly} /> B
                                     </label>
-                                    <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${
-                                      sel === "K"
-                                        ? "bg-red-500/20 text-red-400 border-red-500/50"
-                                        : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
-                                    } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
+                                    <label className={`inline-flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all text-sm font-bold border-2 ${sel === "K"
+                                      ? "bg-red-500/20 text-red-400 border-red-500/50"
+                                      : "bg-white/5 text-white/30 border-white/10 hover:border-red-500/30 hover:text-red-400"
+                                      } ${readOnly ? "pointer-events-none opacity-60" : ""}`}>
                                       <input type="radio" name={`si-${si.id}`} value="K" checked={sel === "K"} onChange={() => setSelections((p) => ({ ...p, [si.id]: "K" }))} className="sr-only" disabled={readOnly} /> K
                                     </label>
                                   </div>

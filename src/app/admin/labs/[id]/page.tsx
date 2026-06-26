@@ -81,6 +81,9 @@ export default function LabDetailPage() {
       const found = labs.find((l) => l.id === id);
       if (found) {
         setLab(found);
+        if (found.report_file) {
+          setUploadedFile(found.report_file);
+        }
       } else {
         toast.error("Laboratorium tidak ditemukan");
         router.push("/admin/labs");
@@ -104,29 +107,29 @@ export default function LabDetailPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, [fetchData]);
 
-   useEffect(() => {
-     if (!selectedSemester || labItems.length === 0) return;
-     const fetchStatuses = async () => {
-       const results = await Promise.all(
-         labItems.map((item) =>
-           getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
-             .catch(() => ({ exists: false as const, review_status: null })),
-         ),
-       );
-       const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
-       labItems.forEach((item, i) => { statuses[item.id] = results[i]; });
-       setItemStatuses(statuses);
+  useEffect(() => {
+    if (!selectedSemester || labItems.length === 0) return;
+    const fetchStatuses = async () => {
+      const results = await Promise.all(
+        labItems.map((item) =>
+          getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
+            .catch(() => ({ exists: false as const, review_status: null })),
+        ),
+      );
+      const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
+      labItems.forEach((item, i) => { statuses[item.id] = results[i]; });
+      setItemStatuses(statuses);
 
-       // Check export status
-       try {
-         const exportCheckResult = await checkLabInspectionsStatus(id, selectedSemester.tahun, selectedSemester.semester);
-         setExportStatus(exportCheckResult);
-       } catch {
-         setExportStatus({canExport: false, incompleteInspections: []});
-       }
-     };
-     fetchStatuses();
-   }, [selectedSemester, labItems]);
+      // Check export status
+      try {
+        const exportCheckResult = await checkLabInspectionsStatus(id, selectedSemester.tahun, selectedSemester.semester);
+        setExportStatus(exportCheckResult);
+      } catch {
+        setExportStatus({ canExport: false, incompleteInspections: [] });
+      }
+    };
+    fetchStatuses();
+  }, [selectedSemester, labItems]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -191,55 +194,55 @@ export default function LabDetailPage() {
     }
   };
 
-   const handleDelete = async () => {
-     if (!deleteId) return;
-     setDeleteLoading(true);
-     try {
-       await deleteItem(deleteId);
-       toast.success("Peralatan berhasil dihapus");
-       setDeleteId(null);
-       fetchData();
-     } catch (err: any) {
-       toast.error(err.response?.data?.message || "Gagal menghapus peralatan");
-     } finally {
-       setDeleteLoading(false);
-     }
-   };
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteItem(deleteId);
+      toast.success("Peralatan berhasil dihapus");
+      setDeleteId(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menghapus peralatan");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
-   const handleExportLab = async () => {
-     if (!selectedSemester) {
-       toast.error("Silakan pilih periode inspeksi terlebih dahulu");
-       return;
-     }
+  const handleExportLab = async () => {
+    if (!selectedSemester) {
+      toast.error("Silakan pilih periode inspeksi terlebih dahulu");
+      return;
+    }
 
-     if (!exportStatus.canExport) {
-       const incomplete = exportStatus.incompleteInspections;
-       if (incomplete.length === 0) {
-         toast.error("Tidak ada inspeksi yang dapat di-export");
-       } else {
-         const itemNames = incomplete.map(i => `${i.nama_barang || `Item #${i.item_id}`} (${i.message})`).join('\n');
-         toast.error(`Inspeksi belum lengkap:\n${itemNames}`, { duration: 5000 });
-       }
-       return;
-     }
+    if (!exportStatus.canExport) {
+      const incomplete = exportStatus.incompleteInspections;
+      if (incomplete.length === 0) {
+        toast.error("Tidak ada inspeksi yang dapat di-export");
+      } else {
+        const itemNames = incomplete.map(i => `${i.nama_barang || `Item #${i.item_id}`} (${i.message})`).join('\n');
+        toast.error(`Inspeksi belum lengkap:\n${itemNames}`, { duration: 5000 });
+      }
+      return;
+    }
 
-     setExportLoading(true);
-     try {
-       await exportLabItems(id, selectedSemester.tahun, selectedSemester.semester);
-       toast.success("Export berhasil");
-     } catch (err: any) {
-       toast.error(err.response?.data?.message || "Gagal export data");
-     } finally {
-       setExportLoading(false);
-     }
-   };
+    setExportLoading(true);
+    try {
+      await exportLabItems(id, selectedSemester.tahun, selectedSemester.semester);
+      toast.success("Export berhasil");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal export data");
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
-   const [file, setFile] = useState<File | null>(null);
-   const [uploading, setUploading] = useState(false);
-   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
 
-   const [exportLoading, setExportLoading] = useState(false);
-   const [exportStatus, setExportStatus] = useState<{canExport: boolean; incompleteInspections: any[]}>({canExport: false, incompleteInspections: []});
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportStatus, setExportStatus] = useState<{ canExport: boolean; incompleteInspections: any[] }>({ canExport: false, incompleteInspections: [] });
 
   const columns = [
     { key: "nama_barang", header: "Nama Alat", render: (i: Item) => <span className="text-white font-medium">{i.nama_barang}</span> },
@@ -452,7 +455,7 @@ export default function LabDetailPage() {
                 setUploading(true);
 
                 try {
-                  const res = await fetch("${process.env.NEXT_PUBLIC_API_URL}/lab/upload", {
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/lab`, {
                     method: "POST",
                     body: formData,
                   });
@@ -499,46 +502,45 @@ export default function LabDetailPage() {
       </div>
 
 
-       {readOnly && (
-         <div className="mb-4 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-300 font-medium">
-           Mode hanya-lihat — Periode {selectedSemester.tahun} {selectedSemester.semester === 'GANJIL' ? 'Ganjil' : 'Genap'} sudah lewat
-         </div>
-       )}
+      {readOnly && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-300 font-medium">
+          Mode hanya-lihat — Periode {selectedSemester.tahun} {selectedSemester.semester === 'GANJIL' ? 'Ganjil' : 'Genap'} sudah lewat
+        </div>
+      )}
 
-       <div className="flex justify-between gap-3">
-         <div className="flex-1" />
-         <div className="flex items-center gap-3">
-           {selectedSemester && (
-             <button 
-               onClick={handleExportLab}
-               disabled={!exportStatus.canExport || exportLoading}
-               title={!exportStatus.canExport ? "Semua inspeksi harus lengkap (6 bulan) untuk export" : "Export semua peralatan ke Excel"}
-               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${
-                 !exportStatus.canExport || exportLoading
-                   ? 'bg-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-50 shadow-emerald-500/10'
-                   : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02] shadow-emerald-500/20'
-               }`}
-             >
-               {exportLoading ? (
-                 <>
-                   <span className="animate-spin">⚙</span>
-                   Exporting...
-                 </>
-               ) : (
-                 <>
-                   <Download className="w-4 h-4" />
-                   Export Semua
-                 </>
-               )}
-             </button>
-           )}
-           {!readOnly && (
-             <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FBBF24] text-[#0F172A] text-sm font-semibold hover:bg-[#FCD34D] transition-all hover:scale-[1.02] shadow-lg shadow-[#FBBF24]/20">
-               + Tambah Peralatan
-             </button>
-           )}
-         </div>
-       </div>
+      <div className="flex justify-between gap-3">
+        <div className="flex-1" />
+        <div className="flex items-center gap-3">
+          {selectedSemester && (
+            <button
+              onClick={handleExportLab}
+              disabled={!exportStatus.canExport || exportLoading}
+              title={!exportStatus.canExport ? "Semua inspeksi harus lengkap (6 bulan) untuk export" : "Export semua peralatan ke Excel"}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${!exportStatus.canExport || exportLoading
+                  ? 'bg-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-50 shadow-emerald-500/10'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02] shadow-emerald-500/20'
+                }`}
+            >
+              {exportLoading ? (
+                <>
+                  <span className="animate-spin">⚙</span>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export Semua
+                </>
+              )}
+            </button>
+          )}
+          {!readOnly && (
+            <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FBBF24] text-[#0F172A] text-sm font-semibold hover:bg-[#FCD34D] transition-all hover:scale-[1.02] shadow-lg shadow-[#FBBF24]/20">
+              + Tambah Peralatan
+            </button>
+          )}
+        </div>
+      </div>
 
       <DataTable
         columns={columns}
@@ -550,7 +552,7 @@ export default function LabDetailPage() {
       />
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => {setHighlightCancel(true);setTimeout(() => {setHighlightCancel(false);}, 700);}}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => { setHighlightCancel(true); setTimeout(() => { setHighlightCancel(false); }, 700); }}>
           <div className="w-full max-w-md rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">{editItem ? "Edit Peralatan" : "Tambah Peralatan"}</h2>
             <div className="space-y-3">
@@ -576,7 +578,7 @@ export default function LabDetailPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30": "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
+              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel ? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30" : "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#FBBF24] text-[#0F172A] hover:bg-[#FCD34D] transition-all disabled:opacity-50">
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>

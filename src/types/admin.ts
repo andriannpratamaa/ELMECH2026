@@ -33,6 +33,7 @@ export interface Lab {
   items_count?: number;
   item_ids?: string;
   items?: Item[];
+  report_file?: string;
   created_at?: string;
 }
 

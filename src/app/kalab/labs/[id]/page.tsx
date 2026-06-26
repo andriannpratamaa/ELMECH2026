@@ -24,7 +24,7 @@ export default function KalabLabDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
-  
+
   const [highlightCancel, setHighlightCancel] = useState(false);
   const [lab, setLab] = useState<Lab | null>(null);
   const [labItems, setLabItems] = useState<Item[]>([]);
@@ -59,7 +59,7 @@ export default function KalabLabDetailPage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Menghitung statistik berdasarkan data itemStatuses yang ada
+  // Menghitung statistik berdasarkan data itemStatuses yang ada
   const stats = (() => {
     const totalPeralatan = labItems.length;
     let totalInspeksi = 0;
@@ -100,6 +100,9 @@ export default function KalabLabDetailPage() {
           return;
         }
         setLab(found);
+        if (found.report_file) {
+          setUploadedFile(found.report_file);
+        }
       } else {
         toast.error("Laboratorium tidak ditemukan");
         router.push("/kalab/labs");
@@ -123,31 +126,31 @@ export default function KalabLabDetailPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, [fetchData]);
 
-   useEffect(() => {
-     if (!selectedSemester || labItems.length === 0) return;
-     const fetchStatuses = async () => {
-       const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
-       const results = await Promise.all(
-         labItems.map((item) =>
-           getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
-             .catch(() => ({ exists: false as const, review_status: null })),
-         ),
-       );
-       labItems.forEach((item, i) => {
-         statuses[item.id] = results[i];
-       });
-       setItemStatuses(statuses);
+  useEffect(() => {
+    if (!selectedSemester || labItems.length === 0) return;
+    const fetchStatuses = async () => {
+      const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
+      const results = await Promise.all(
+        labItems.map((item) =>
+          getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
+            .catch(() => ({ exists: false as const, review_status: null })),
+        ),
+      );
+      labItems.forEach((item, i) => {
+        statuses[item.id] = results[i];
+      });
+      setItemStatuses(statuses);
 
-       // Check export status
-       try {
-         const exportCheckResult = await checkLabInspectionsStatus(id, selectedSemester.tahun, selectedSemester.semester);
-         setExportStatus(exportCheckResult);
-       } catch {
-         setExportStatus({canExport: false, incompleteInspections: []});
-       }
-     };
-     fetchStatuses();
-   }, [selectedSemester, labItems]);
+      // Check export status
+      try {
+        const exportCheckResult = await checkLabInspectionsStatus(id, selectedSemester.tahun, selectedSemester.semester);
+        setExportStatus(exportCheckResult);
+      } catch {
+        setExportStatus({ canExport: false, incompleteInspections: [] });
+      }
+    };
+    fetchStatuses();
+  }, [selectedSemester, labItems]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -212,61 +215,61 @@ export default function KalabLabDetailPage() {
     }
   };
 
-   const handleDelete = async () => {
-     if (!deleteId) return;
-     setDeleteLoading(true);
-     try {
-       await deleteItem(deleteId);
-       toast.success("Peralatan berhasil dihapus");
-       setDeleteId(null);
-       fetchData();
-     } catch (err: any) {
-       toast.error(err.response?.data?.message || "Gagal menghapus peralatan");
-     } finally {
-       setDeleteLoading(false);
-     }
-   };
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteItem(deleteId);
+      toast.success("Peralatan berhasil dihapus");
+      setDeleteId(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal menghapus peralatan");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
-   const [exportLoading, setExportLoading] = useState(false);
-   const [exportStatus, setExportStatus] = useState<{canExport: boolean; incompleteInspections: any[]}>({canExport: false, incompleteInspections: []});
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportStatus, setExportStatus] = useState<{ canExport: boolean; incompleteInspections: any[] }>({ canExport: false, incompleteInspections: [] });
 
-   const handleExportLab = async () => {
-    
-     if (!selectedSemester) {
-       toast.error("Silakan pilih periode inspeksi terlebih dahulu");
-       return;
-     }
+  const handleExportLab = async () => {
 
-     if (!exportStatus.canExport) {
-       const incomplete = exportStatus.incompleteInspections;
-       if (incomplete.length === 0) {
-         toast.error("Tidak ada inspeksi yang dapat di-export");
-       } else {
-         const itemNames = incomplete.map(i => `${i.nama_barang || `Item #${i.item_id}`} (${i.message})`).join('\n');
-         toast.error(`Inspeksi belum lengkap:\n${itemNames}`, { duration: 5000 });
-       }
-       
-       return;
-     }
+    if (!selectedSemester) {
+      toast.error("Silakan pilih periode inspeksi terlebih dahulu");
+      return;
+    }
 
-     setExportLoading(true);
-     try {
-       await exportLabItems(id, selectedSemester.tahun, selectedSemester.semester);
-       toast.success("Export berhasil");
-     } catch (err: any) {
-    console.log(err.response);
-    console.log(err.response?.data);
+    if (!exportStatus.canExport) {
+      const incomplete = exportStatus.incompleteInspections;
+      if (incomplete.length === 0) {
+        toast.error("Tidak ada inspeksi yang dapat di-export");
+      } else {
+        const itemNames = incomplete.map(i => `${i.nama_barang || `Item #${i.item_id}`} (${i.message})`).join('\n');
+        toast.error(`Inspeksi belum lengkap:\n${itemNames}`, { duration: 5000 });
+      }
 
-    toast.error(err.response?.data?.message || "Gagal export");
-     } finally {
-       setExportLoading(false);
-     }
-   };
+      return;
+    }
 
-    const [file, setFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const [uploadedFile, setUploadedFile] = useState<string | null>(null);
-    
+    setExportLoading(true);
+    try {
+      await exportLabItems(id, selectedSemester.tahun, selectedSemester.semester);
+      toast.success("Export berhasil");
+    } catch (err: any) {
+      console.log(err.response);
+      console.log(err.response?.data);
+
+      toast.error(err.response?.data?.message || "Gagal export");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+
   const columns = [
     { key: "nama_barang", header: "Nama Alat", render: (i: Item) => <span className="text-white font-medium">{i.nama_barang}</span> },
     { key: "kode_barang", header: "Kode Alat", render: (i: Item) => <span className="text-white/50">{i.kode_barang || "—"}</span> },
@@ -482,7 +485,7 @@ export default function KalabLabDetailPage() {
                 setUploading(true);
 
                 try {
-                  const res = await fetch("${process.env.NEXT_PUBLIC_API_URL}/lab/upload", {
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/lab`, {
                     method: "POST",
                     body: formData,
                   });
@@ -532,15 +535,14 @@ export default function KalabLabDetailPage() {
         <div className="flex-1" />
         <div className="flex items-center gap-3">
           {selectedSemester && (
-            <button 
+            <button
               onClick={handleExportLab}
               disabled={!exportStatus.canExport || exportLoading}
               title={!exportStatus.canExport ? "Semua inspeksi harus lengkap (6 bulan) untuk export" : "Export semua peralatan ke Excel"}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${
-                !exportStatus.canExport || exportLoading
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${!exportStatus.canExport || exportLoading
                   ? 'bg-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-50 shadow-emerald-500/10'
                   : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02] shadow-emerald-500/20'
-              }`}
+                }`}
             >
               {exportLoading ? (
                 <>
@@ -563,7 +565,7 @@ export default function KalabLabDetailPage() {
         </div>
       </div>
 
-      
+
       <DataTable
         columns={columns}
         data={displayItems}
@@ -574,7 +576,7 @@ export default function KalabLabDetailPage() {
       />
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => {setHighlightCancel(true);setTimeout(() => {setHighlightCancel(false);}, 700);}}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => { setHighlightCancel(true); setTimeout(() => { setHighlightCancel(false); }, 700); }}>
           <div className="w-full max-w-md rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">{editItem ? "Edit Peralatan" : "Tambah Peralatan"}</h2>
             <div className="space-y-3">
@@ -601,7 +603,7 @@ export default function KalabLabDetailPage() {
 
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30": "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
+              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel ? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30" : "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all disabled:opacity-50">
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>
