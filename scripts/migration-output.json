@@ -1,0 +1,136 @@
+{
+  "tentang": {
+    "title": "Tentang",
+    "blocks": [
+      {
+        "type": "text",
+        "data": {
+          "title": "Sejarah",
+          "body": "Politeknik Perkapalan Negeri Surabaya (PPNS) didirikan pada tahun 1996 sebagai institusi pendidikan vokasi di bidang perkapalan dan maritim. Berawal dari sebuah program studi di bawah naungan ITS, PPNS kemudian berkembang menjadi politeknik negeri yang mandiri dan terkemuka.\n\nSejak berdiri, PPNS telah mencetak ribuan lulusan yang tersebar di berbagai sektor industri maritim, baik nasional maupun internasional. Dengan motto \"Smart Maritime Campus\", PPNS terus berinovasi dalam pengembangan pendidikan vokasi yang relevan dengan kebutuhan industri.\n\nPada tahun 2025, PPNS meraih akreditasi Unggul dari BAN-PT, menegaskan posisinya sebagai salah satu politeknik terbaik di Indonesia. Kini PPNS memiliki 4 fakultas dengan 25 program studi yang mencakup berbagai bidang teknologi maritim."
+        }
+      },
+      {
+        "type": "text",
+        "data": {
+          "title": "Visi",
+          "body": "Menjadi politeknik perkapalan yang unggul, inovatif, dan berdaya saing global dalam pengembangan teknologi maritim yang berkelanjutan pada tahun 2030."
+        }
+      }
+    ]
+  },
+  "program": {
+    "title": "Program",
+    "blocks": [
+      {
+        "type": "features",
+        "data": {
+          "title": "Program Studi",
+          "items": [
+            {
+              "title": "Teknik Perkapalan",
+              "desc": "Program unggulan yang mencetak tenaga ahli di bidang perancangan, konstruksi, dan produksi kapal."
+            },
+            {
+              "title": "Teknik Kelistrikan",
+              "desc": "Fokus pada sistem kelistrikan kapal, otomasi, dan distribusi tenaga listrik maritim."
+            },
+            {
+              "title": "Teknik Mesin",
+              "desc": "Penguasaan teknologi permesinan kapal, sistem propulsi, dan pemeliharaan mesin industri."
+            },
+            {
+              "title": "Teknik Permesinan",
+              "desc": "Spesialisasi dalam permesinan presisi, manufaktur komponen kapal, dan pengelasan."
+            },
+            {
+              "title": "Teknologi Rekayasa",
+              "desc": "Program D4 yang mengintegrasikan rekayasa teknologi dengan aplikasi industri maritim."
+            },
+            {
+              "title": "Teknik Otomasi",
+              "desc": "Pendalaman sistem kontrol otomatis, robotika, dan IoT untuk industri perkapalan."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "berita": {
+    "title": "Berita",
+    "blocks": [
+      {
+        "type": "text",
+        "data": {
+          "title": "Berita",
+          "body": "- PPNS Luncurkan Program Panel Surya di 10 Gedung Utama\n- Mahasiswa PPNS Juara Kapal Cepat Nasional\n- PPNS Jalin Kerjasama dengan 10 Industri Maritim\n- Launching Kapal Riset Mahasiswa PPNS"
+        }
+      }
+    ]
+  },
+  "galeri": {
+    "title": "Galeri",
+    "blocks": [
+      {
+        "type": "gallery",
+        "data": {
+          "title": "Galeri",
+          "images": [
+            "https://images.unsplash.com/photo-1562774053-701939374585?w=800&q=80",
+            "https://images.unsplash.com/photo-1581092335391-9583eb1c0f6a?w=800&q=80",
+            "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80",
+            "https://images.unsplash.com/photo-1562774053-701939374585?w=800&q=80",
+            "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=800&q=80",
+            "https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=800&q=80",
+            "https://images.unsplash.com/photo-1581092335391-9583eb1c0f6a?w=800&q=80",
+            "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=800&q=80",
+            "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80"
+          ]
+        }
+      }
+    ]
+  },
+  "kontak": {
+    "title": "Kontak",
+    "blocks": [
+      {
+        "type": "text",
+        "data": {
+          "title": "Kontak",
+          "body": "Alamat: Jl. Teknik Kimia, Keputih, Kec. Sukolilo, Surabaya 60111\nTelepon: +62 31 594 7264\nEmail: info@ppns.ac.id"
+        }
+      }
+    ]
+  },
+  "laporan": {
+    "title": "Laporan",
+    "blocks": [
+      {
+        "type": "text",
+        "data": {
+          "title": "Laporan",
+          "body": "- Laporan Keberlanjutan 2025\n- Rencana Aksi Green Campus\n- Data Emisi Karbon Kampus\n- Pedoman Green Campus\n- Laporan Keuangan Hijau 2025\n- Audit Energi Kampus"
+        }
+      }
+    ]
+  },
+  "": {
+    "title": "Beranda",
+    "blocks": [
+      {
+        "type": "hero",
+        "data": {
+          "title": "PPNS Smart",
+          "subtitle": "Maritime Campus",
+          "description": "Portal informasi akademik, inovasi teknologi, berita kampus, dan kolaborasi industri maritim modern."
+        }
+      },
+      {
+        "type": "text",
+        "data": {
+          "title": "Tentang Singkat",
+          "body": "PPNS - Politeknik Perkapalan Negeri Surabaya. Lihat halaman Tentang untuk detail."
+        }
+      }
+    ]
+  }
+}
