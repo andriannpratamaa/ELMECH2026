@@ -18,14 +18,23 @@ const hasNavbarColumn = async (column) => {
 };
 
 const normalizeNavbarItem = (item) => {
-  const page_slug = item.page_slug ?? item.page_slug_from_page ?? null;
-  const href = page_slug ? `/${page_slug}` : (item.href ?? null);
+  // Determine page slug (prefer explicit page_slug, then joined page slug)
+  let page_slug = item.page_slug ?? item.page_slug_from_page ?? null;
 
-  return {
-    ...item,
-    page_slug,
-    href,
-  };
+  // Normalize homepage: if slug is empty string, treat as root
+  if (page_slug === "") {
+    page_slug = ""; // keep empty to indicate home
+  }
+
+  // Build href: if we have a page_slug (including empty string for home), map to '/'
+  let href = null;
+  if (page_slug !== null) {
+    href = page_slug === "" ? "/" : `/${page_slug}`;
+  } else {
+    href = item.href ?? null;
+  }
+
+  return { ...item, page_slug, href };
 };
 
 const getNavbarItemsSelect = async (includeActive = true) => {
@@ -51,13 +60,22 @@ const getNavbarItemsSelect = async (includeActive = true) => {
   }
 
   const joinClause = hasPageId ? "LEFT JOIN pages p ON p.id = ni.page_id" : "";
-  const activeClause = includeActive ? "WHERE ni.active = 1" : "";
+
+  // Build WHERE conditions safely to allow multiple filters (active + published)
+  const conditions = [];
+  if (includeActive) conditions.push("ni.active = 1");
+  // If navbar item links to a page (page_id present) and we're fetching public items,
+  // ensure the linked page is published so public navbar doesn't show links to unpublished pages.
+  if (hasPageId && includeActive) conditions.push("p.published = 1");
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const [items] = await pool.query(
     `SELECT ${selectFields.join(", ")}
        FROM navbar_items ni
        ${joinClause}
-       ${activeClause}
+       ${whereClause}
        ORDER BY ni.parent_id ASC, ni.order_index ASC`,
   );
 

@@ -5,15 +5,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, GraduationCap, Shield } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getNavLinks } from "@/services/api";
-import { isAuthenticated } from "@/services/auth";
-const NAV_LINKS = getNavLinks();
+import { getNavbarItems } from "@/services/cms";
+import type { NavbarItem } from "@/services/cms";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [auth, setAuth] = useState(false);
+  const [navItems, setNavItems] = useState<NavbarItem[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const items = await getNavbarItems();
+        setNavItems(items || []);
+      } catch (e) {
+        console.error("Failed to load navbar:", e);
+      }
+    };
+    load();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -22,21 +34,15 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    setAuth(isAuthenticated());
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [open]);
 
   const isActive = (href: string) => {
+    if (!href) return false;
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
@@ -46,15 +52,15 @@ export default function Navbar() {
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className={`fixed z-[100] transition-all duration-500 left-3 right-3 sm:left-5 sm:right-5 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 ${
+        transition={{ duration: 0.6 }}
+        className={`fixed z-[100] left-3 right-3 sm:left-5 sm:right-5 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 ${
           scrolled ? "top-3" : "top-6"
         }`}
       >
         <nav
-          className={`mx-auto transition-all duration-500 w-full lg:w-[calc(100vw-2rem)] lg:max-w-6xl ${
+          className={`mx-auto transition-all duration-300 w-full lg:w-[calc(100vw-2rem)] lg:max-w-6xl ${
             scrolled
-              ? "glass-nav-scrolled lg:max-w-5xl rounded-2xl lg:rounded-full"
+              ? "glass-nav-scrolled rounded-2xl lg:rounded-full"
               : "glass-nav rounded-2xl"
           } ${scrolled ? "h-14" : "h-16 sm:h-[72px] lg:h-16"}`}
         >
@@ -66,41 +72,72 @@ export default function Navbar() {
                 }`}
               >
                 <GraduationCap
-                  className={`text-white transition-all duration-300 ${
-                    scrolled ? "w-4 h-4" : "w-5 h-5"
-                  }`}
+                  className={`text-white transition-all duration-300 ${scrolled ? "w-4 h-4" : "w-5 h-5"}`}
                   strokeWidth={2}
                 />
               </div>
               <span
-                className={`font-bold tracking-tight font-[family-name:var(--font-display)] transition-all duration-300 ${
-                  scrolled
-                    ? "text-sm text-[#0F172A]"
-                    : "text-sm lg:text-lg text-white"
-                }`}
+                className={`font-bold tracking-tight font-[family-name:var(--font-display)] transition-all duration-300 ${scrolled ? "text-sm text-[#0F172A]" : "text-sm lg:text-lg text-white"}`}
               >
                 PPNS
               </span>
             </Link>
 
             <div className="hidden lg:flex items-center gap-1">
-              {NAV_LINKS.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`nav-link px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                    isActive(l.href)
-                      ? scrolled
-                        ? "text-[#0F172A] bg-gray-100"
-                        : "text-white bg-white/10"
-                      : scrolled
-                        ? "text-gray-600 hover:text-[#0F172A] hover:bg-gray-100"
-                        : "text-white/80 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const hasChildren = item.children && item.children.length > 0;
+                return (
+                  <div
+                    key={item.id}
+                    className="relative"
+                    onMouseEnter={() =>
+                      hasChildren && setActiveDropdown(item.id)
+                    }
+                    onMouseLeave={() =>
+                      hasChildren &&
+                      setActiveDropdown((cur) => (cur === item.id ? null : cur))
+                    }
+                  >
+                    <Link
+                      href={item.href || "/"}
+                      className={`nav-link px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isActive(item.href || "/")
+                          ? scrolled
+                            ? "text-[#0F172A] bg-gray-100"
+                            : "text-white bg-white/10"
+                          : scrolled
+                            ? "text-gray-600 hover:text-[#0F172A] hover:bg-gray-100"
+                            : "text-white/80 hover:text-white hover:bg-white/10"
+                      } ${hasChildren ? "underline decoration-white/90 decoration-2 underline-offset-6" : ""}`}
+                    >
+                      {item.label}
+                    </Link>
+
+                    {hasChildren && (
+                      <div
+                        className={`absolute left-0 mt-2 w-56 bg-slate-900/95 border border-white/10 rounded-lg shadow-2xl transform transition-all ${
+                          activeDropdown === item.id
+                            ? "opacity-100 translate-y-0 pointer-events-auto scale-100"
+                            : "opacity-0 -translate-y-1 pointer-events-none scale-95"
+                        }`}
+                        style={{ zIndex: 120 }}
+                      >
+                        <div className="py-1">
+                          {item.children!.map((c) => (
+                            <Link
+                              key={c.id}
+                              href={c.href || "/"}
+                              className={`block px-4 py-2 text-sm text-white/90 hover:text-white hover:bg-white/5 ${isActive(c.href || "/") ? "bg-white/10 text-white" : ""}`}
+                            >
+                              {c.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex items-center gap-3">
@@ -119,9 +156,7 @@ export default function Navbar() {
               </Link>
               <button
                 onClick={() => setOpen(!open)}
-                className={`lg:hidden p-2 rounded-lg transition-colors ${
-                  scrolled ? "hover:bg-gray-100" : "hover:bg-white/10"
-                }`}
+                className={`lg:hidden p-2 rounded-lg transition-colors ${scrolled ? "hover:bg-gray-100" : "hover:bg-white/10"}`}
                 aria-label="Toggle menu"
               >
                 {open ? (
@@ -163,31 +198,56 @@ export default function Navbar() {
           >
             <div className="flex flex-col h-full pt-24 pb-8 px-6">
               <div className="space-y-1 flex-1">
-                {NAV_LINKS.map((l, i) => (
-                  <motion.div
-                    key={l.href}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.3 }}
-                  >
-                    <Link
-                      href={l.href}
-                      onClick={() => setOpen(false)}
-                      className={`block w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                        isActive(l.href)
-                          ? "text-white bg-white/10"
-                          : "text-white/70 hover:text-white hover:bg-white/10"
-                      }`}
+                {navItems.map((item, i) => (
+                  <div key={item.id}>
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.3 }}
                     >
-                      {l.label}
-                    </Link>
-                  </motion.div>
+                      <Link
+                        href={item.href || "/"}
+                        onClick={() => setOpen(false)}
+                        className={`block w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive(item.href || "/") ? "text-white bg-white/10" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+                      >
+                        <span className="flex items-center justify-between">
+                          <span>{item.label}</span>
+                          {item.children && item.children.length > 0 && (
+                            <span className="text-sm text-white/70">▾</span>
+                          )}
+                        </span>
+                      </Link>
+                    </motion.div>
+                    {item.children && item.children.length > 0 && (
+                      <div className="pl-6">
+                        {item.children.map((c, ci) => (
+                          <motion.div
+                            key={c.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                              delay: (i + ci + 1) * 0.03,
+                              duration: 0.2,
+                            }}
+                          >
+                            <Link
+                              href={c.href || "/"}
+                              onClick={() => setOpen(false)}
+                              className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium transition-all text-white/70 hover:text-white hover:bg-white/5 ${isActive(c.href || "/") ? "text-white bg-white/10" : ""}`}
+                            >
+                              {c.label}
+                            </Link>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{
-                    delay: NAV_LINKS.length * 0.05 + 0.05,
+                    delay: navItems.length * 0.05 + 0.05,
                     duration: 0.3,
                   }}
                 >
@@ -197,7 +257,7 @@ export default function Navbar() {
                     className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20"
                   >
                     <Shield className="w-4 h-4" />
-                    Admin Panel
+                    Admin
                   </Link>
                 </motion.div>
               </div>
