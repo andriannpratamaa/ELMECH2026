@@ -1,0 +1,32 @@
+CREATE DATABASE IF NOT EXISTS green_campus_cms;
+USE green_campus_cms;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin') DEFAULT 'admin',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  title VARCHAR(200) NOT NULL,
+  content JSON NOT NULL,
+  published BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS media (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  mime_type VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO users (name, email, password, role) VALUES
+('Admin', 'admin@ppns.ac.id', '$2a$10$dummyhashwillbereplaced', 'admin');

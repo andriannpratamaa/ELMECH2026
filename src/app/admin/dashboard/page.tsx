@@ -1,57 +1,22 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
-import { Users, FlaskConical, Package, CalendarClock, ClipboardCheck, CheckSquare } from "lucide-react";
-import { toast } from "sonner";
+import Link from "next/link";
 import { getUser } from "@/services/auth";
-import StatCard from "@/components/admin/StatCard";
-import LoadingSkeleton from "@/components/admin/LoadingSkeleton";
-import { getUsers } from "@/services/users";
-import { getLabs } from "@/services/labs";
-import { getItems } from "@/services/items";
-import { getSchedules } from "@/services/schedules";
-import { getPendingReviews } from "@/services/inspections";
-import { getPendingCategories } from "@/services/criteria";
-import type { Profile } from "@/types/admin";
+import { Settings, FileText, Image } from "lucide-react";
+import type { Profile } from "@/types/cms";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    users: "—", labs: "—", items: "—", schedules: "—", inspections: "—", criteria: "—"
-  });
 
   useEffect(() => {
     setUser(getUser());
-    const fetchStats = async () => {
-      try {
-        const [users, labs, items, schedules, inspections, criteria] = await Promise.all([
-          getUsers(), getLabs(), getItems(), getSchedules(), getPendingReviews(), getPendingCategories()
-        ]);
-        setStats({
-          users: users.length.toString(),
-          labs: labs.length.toString(),
-          items: items.length.toString(),
-          schedules: schedules.length.toString(),
-          inspections: inspections.length.toString(),
-          criteria: criteria.length.toString(),
-        });
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || "Gagal memuat data dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
   }, []);
 
-  const cards = [
-    { icon: Users, label: "Total Users", value: stats.users },
-    { icon: FlaskConical, label: "Total Laboratories", value: stats.labs },
-    { icon: Package, label: "Total Alat", value: stats.items },
-    { icon: CalendarClock, label: "Total Schedules", value: stats.schedules },
-    { icon: ClipboardCheck, label: "Pending Inspections", value: stats.inspections },
-    { icon: CheckSquare, label: "Pending Criteria", value: stats.criteria },
+  const quickAccess = [
+    { icon: FileText, label: "Konten", href: "/admin/pages", description: "Kelola halaman dan navbar" },
+    { icon: Image, label: "Media", href: "/admin/media", description: "Kelola gambar dan file" },
+    { icon: Settings, label: "Settings", href: "#", description: "Pengaturan lainnya" },
   ];
 
   return (
@@ -62,19 +27,33 @@ export default function DashboardPage() {
           {user?.name || "Pengguna"}
         </h1>
         <span className="inline-block mt-2 px-3 py-1 rounded-lg bg-[#FBBF24]/10 border border-[#FBBF24]/20 text-[#FBBF24] text-xs font-semibold uppercase tracking-wider">
-          {user?.role || "-"}
+          CMS Admin
         </span>
       </div>
 
-      {loading ? (
-        <LoadingSkeleton rows={3} />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {cards.map((card) => (
-            <StatCard key={card.label} icon={card.icon} label={card.label} value={card.value} />
-          ))}
-        </div>
-      )}
+      {/* Quick Access */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {quickAccess.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="rounded-2xl bg-white/5 border border-white/10 hover:border-[#FBBF24]/40 hover:bg-white/10 p-6 transition-all group"
+            >
+              <Icon className="w-8 h-8 text-[#FBBF24] mb-3 group-hover:scale-110 transition-transform" />
+              <h3 className="font-semibold text-white">{item.label}</h3>
+              <p className="text-xs text-white/40 mt-1">{item.description}</p>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-8 text-center">
+        <p className="text-white/40 text-sm">
+          Gunakan menu di atas untuk mengelola konten website Anda.
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { Profile } from '@/types/admin';
+import type { Profile } from '@/types/cms';
 
 export interface LoginPayload {
   email: string;

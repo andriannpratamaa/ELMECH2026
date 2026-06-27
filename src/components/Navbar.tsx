@@ -31,7 +31,9 @@ export default function Navbar() {
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const isActive = (href: string) => {
@@ -58,16 +60,25 @@ export default function Navbar() {
         >
           <div className="flex items-center justify-between h-full px-5 lg:px-8">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className={`rounded-xl bg-gradient-to-br from-[#0F172A] to-[#1E3A8A] flex items-center justify-center shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:scale-105 ${
-                scrolled ? "w-9 h-9" : "w-[42px] h-[42px] lg:w-10 lg:h-10"
-              }`}>
-                <GraduationCap className={`text-white transition-all duration-300 ${
-                  scrolled ? "w-4 h-4" : "w-5 h-5"
-                }`} strokeWidth={2} />
+              <div
+                className={`rounded-xl bg-gradient-to-br from-[#0F172A] to-[#1E3A8A] flex items-center justify-center shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:scale-105 ${
+                  scrolled ? "w-9 h-9" : "w-[42px] h-[42px] lg:w-10 lg:h-10"
+                }`}
+              >
+                <GraduationCap
+                  className={`text-white transition-all duration-300 ${
+                    scrolled ? "w-4 h-4" : "w-5 h-5"
+                  }`}
+                  strokeWidth={2}
+                />
               </div>
-              <span className={`font-bold tracking-tight font-[family-name:var(--font-display)] transition-all duration-300 ${
-                scrolled ? "text-sm text-[#0F172A]" : "text-sm lg:text-lg text-white"
-              }`}>
+              <span
+                className={`font-bold tracking-tight font-[family-name:var(--font-display)] transition-all duration-300 ${
+                  scrolled
+                    ? "text-sm text-[#0F172A]"
+                    : "text-sm lg:text-lg text-white"
+                }`}
+              >
                 PPNS
               </span>
             </Link>
@@ -93,15 +104,13 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center gap-3">
-              {auth && (
-                <Link
-                  href="/admin/dashboard"
-                  className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20 hover:bg-[#FBBF24]/20 transition-all duration-300"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  Admin
-                </Link>
-              )}
+              <Link
+                href="/admin"
+                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20 hover:bg-[#FBBF24]/20 transition-all duration-300"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Admin
+              </Link>
               <Link
                 href="/program"
                 className="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0F172A] bg-[#FBBF24] hover:bg-[#FCD34D] transition-all duration-300 hover:scale-105 shadow-lg shadow-[#FBBF24]/20"
@@ -116,9 +125,13 @@ export default function Navbar() {
                 aria-label="Toggle menu"
               >
                 {open ? (
-                  <X className={`w-7 h-7 ${scrolled ? "text-[#0F172A]" : "text-white"}`} />
+                  <X
+                    className={`w-7 h-7 ${scrolled ? "text-[#0F172A]" : "text-white"}`}
+                  />
                 ) : (
-                  <Menu className={`w-7 h-7 ${scrolled ? "text-[#0F172A]" : "text-white"}`} />
+                  <Menu
+                    className={`w-7 h-7 ${scrolled ? "text-[#0F172A]" : "text-white"}`}
+                  />
                 )}
               </button>
             </div>
@@ -170,22 +183,23 @@ export default function Navbar() {
                     </Link>
                   </motion.div>
                 ))}
-                {auth && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: NAV_LINKS.length * 0.05 + 0.05, duration: 0.3 }}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{
+                    delay: NAV_LINKS.length * 0.05 + 0.05,
+                    duration: 0.3,
+                  }}
+                >
+                  <Link
+                    href="/admin"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20"
                   >
-                    <Link
-                      href="/admin/dashboard"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#FBBF24] bg-[#FBBF24]/10 border border-[#FBBF24]/20"
-                    >
-                      <Shield className="w-4 h-4" />
-                      Admin Panel
-                    </Link>
-                  </motion.div>
-                )}
+                    <Shield className="w-4 h-4" />
+                    Admin Panel
+                  </Link>
+                </motion.div>
               </div>
               <div className="pt-6 border-t border-white/10">
                 <Link

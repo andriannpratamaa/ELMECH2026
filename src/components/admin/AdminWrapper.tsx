@@ -10,10 +10,7 @@ export default function AdminWrapper({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const raw = localStorage.getItem("user");
-    let user: any = null;
-    try { user = raw ? JSON.parse(raw) : null; } catch {}
-    if (!token || !user || user.role !== "admin") {
+    if (!token) {
       router.replace("/admin");
     } else {
       setChecked(true);

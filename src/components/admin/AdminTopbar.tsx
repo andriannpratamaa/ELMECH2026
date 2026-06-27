@@ -10,7 +10,7 @@ const PATH_LABELS: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
   "/admin/users": "Users",
   "/admin/labs": "Laboratories",
-  "/admin/items": "Alat",
+  "/admin/items": "Peralatan",
   "/admin/schedules": "Schedules",
   "/admin/inspections": "Inspections",
   "/admin/criteria": "Criteria",

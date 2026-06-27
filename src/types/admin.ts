@@ -9,7 +9,7 @@ export interface User {
   name: string;
   email: string;
   nip?: string;
-  role: "admin" | "kalab";
+  role: "admin" | "kalab" | "plp";
   password?: string;
   laboratory_id?: number | null;
   lab_name?: string;
@@ -20,8 +20,16 @@ export interface Lab {
   id: number;
   nama_lab: string;
   lokasi?: string;
-  kalab_id?: number;
+
+  kalab_id?: number | null;
   kalab_name?: string;
+
+  plp1_id?: number | null;
+  plp2_id?: number | null;
+
+  plp1_name?: string;
+  plp2_name?: string;
+
   items_count?: number;
   item_ids?: string;
   items?: Item[];
@@ -32,11 +40,13 @@ export interface Item {
   id: number;
   nama_barang: string;
   kode_barang?: string;
-  kondisi?: string;
-  status?: string;
   pembuat_alat?: string;
   tanggal_pembelian?: string;
+  kondisi?: string;
+  status?: string;
   categories?: CriteriaCategory[];
+  inspection_count?: number;
+  category_count?: number;
   created_at?: string;
 }
 
@@ -61,6 +71,7 @@ export interface Inspection {
   year?: number;
   status?: string;
   approval_status?: string;
+  review_status?: string;
   created_at?: string;
   tanggal_inspeksi?: string;
   inspector_name?: string;
@@ -74,6 +85,8 @@ export interface Inspection {
   foto_url?: string;
   alasan_penolakan?: string;
   catatan?: string;
+  tahun?: number;
+  semester?: string;
 }
 
 export interface MonthlyGroup {
@@ -139,6 +152,7 @@ export interface CriteriaCategory {
   items?: Item[];
   item_names?: string;
   status?: string;
+  alasan_penolakan?: string;
   sub_items?: CriteriaSubItem[];
   subitems?: CriteriaSubItem[];
   created_at?: string;
@@ -151,7 +165,9 @@ export interface CriteriaSubItem {
   kategori_id?: number;
   category_id?: number;
   category_name?: string;
+  laboratory_id?: number;
   status?: string;
+  alasan_penolakan?: string;
   created_at?: string;
 }
 
