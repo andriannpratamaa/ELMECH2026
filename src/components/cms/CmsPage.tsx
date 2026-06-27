@@ -18,7 +18,7 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
   const [blocks, setBlocks] = useState<ContentBlock[]>(
     initialData?.content || [],
   );
-  const [loading, setLoading] = useState(!initialData);
+  const [loading, setLoading] = useState(!initialData && !Boolean(children));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,13 +27,15 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
     }
 
     let isMounted = true;
+    const hasFallback = Boolean(children);
 
     getPageBySlug(slug)
       .then((page) => {
         if (!isMounted) return;
+
         if (!page) {
-          setError(`Halaman "${slug}" tidak ditemukan`);
           setBlocks([]);
+          setError(hasFallback ? null : `Halaman "${slug}" tidak ditemukan`);
           return;
         }
 
@@ -49,7 +51,7 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
       .catch((err) => {
         if (!isMounted) return;
         console.error(`[CmsPage] Error mengambil halaman "${slug}":`, err);
-        setError(`Gagal memuat halaman "${slug}"`);
+        setError(hasFallback ? null : `Gagal memuat halaman "${slug}"`);
         setBlocks([]);
       })
       .finally(() => {
@@ -59,7 +61,7 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [slug, initialData]);
+  }, [slug, initialData, children]);
 
   if (loading) {
     return (
@@ -69,7 +71,7 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
     );
   }
 
-  if (error) {
+  if (error && blocks.length === 0 && !children) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center bg-[#F8FAFC]">
         <div className="text-center">
@@ -80,15 +82,8 @@ export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
   }
 
   if (blocks.length === 0) {
-    // Empty blocks is okay - just render nothing
-    // User might be creating page with no content yet
     return children || null;
   }
 
-  return (
-    <>
-      <BlockRenderer blocks={blocks} />
-      {children}
-    </>
-  );
+  return <BlockRenderer blocks={blocks} />;
 }
