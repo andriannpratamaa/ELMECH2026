@@ -144,9 +144,36 @@ export async function getPages(): Promise<Page[]> {
 /**
  * Ambil halaman berdasarkan slug
  */
+function normalizeSlugForApi(slug: string) {
+  if (slug === "" || slug === "/" || slug === "root") {
+    return "root";
+  }
+  return slug;
+}
+
+function getPagePath(slug: string) {
+  const normalized = normalizeSlugForApi(slug);
+  return normalized === "root" ? "/pages/root" : `/pages/${normalized}`;
+}
+
+function getPagePublishPath(slug: string) {
+  const normalized = normalizeSlugForApi(slug);
+  return normalized === "root"
+    ? "/pages/root/publish"
+    : `/pages/${normalized}/publish`;
+}
+
+function getPageUnpublishPath(slug: string) {
+  const normalized = normalizeSlugForApi(slug);
+  return normalized === "root"
+    ? "/pages/root/unpublish"
+    : `/pages/${normalized}/unpublish`;
+}
+
 export async function getPageBySlug(slug: string): Promise<Page | null> {
   try {
-    const res = await api.get(`/pages/${slug}`);
+    const path = getPagePath(slug);
+    const res = await api.get(path);
     return res.data.data || null;
   } catch (error) {
     console.warn(`[CMS] Halaman dengan slug "${slug}" tidak ditemukan`);
@@ -186,7 +213,7 @@ export async function updatePage(
   data: { title: string; content: any; published?: boolean },
 ): Promise<void> {
   try {
-    await api.put(`/pages/${slug}`, data);
+    await api.put(getPagePath(slug), data);
   } catch (error) {
     console.error(`[CMS] Error memperbarui halaman "${slug}":`, error);
     throw error;
@@ -198,7 +225,7 @@ export async function updatePage(
  */
 export async function deletePage(slug: string): Promise<void> {
   try {
-    await api.delete(`/pages/${slug}`);
+    await api.delete(getPagePath(slug));
   } catch (error) {
     console.error(`[CMS] Error menghapus halaman "${slug}":`, error);
     throw error;
@@ -210,7 +237,7 @@ export async function deletePage(slug: string): Promise<void> {
  */
 export async function publishPage(slug: string): Promise<void> {
   try {
-    await api.post(`/pages/${slug}/publish`, {});
+    await api.post(getPagePublishPath(slug), {});
   } catch (error) {
     console.error(`[CMS] Error mempublikasikan halaman "${slug}":`, error);
     throw error;
@@ -222,7 +249,7 @@ export async function publishPage(slug: string): Promise<void> {
  */
 export async function unpublishPage(slug: string): Promise<void> {
   try {
-    await api.post(`/pages/${slug}/unpublish`, {});
+    await api.post(getPageUnpublishPath(slug), {});
   } catch (error) {
     console.error(
       `[CMS] Error membatalkan publikasi halaman "${slug}":`,

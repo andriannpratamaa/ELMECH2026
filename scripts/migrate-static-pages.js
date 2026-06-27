@@ -259,7 +259,7 @@ function buildBlocksFromData() {
       },
     });
   }
-  blocksBySlug["beranda"] = { title: "Beranda", blocks: blocksHome };
+  blocksBySlug[""] = { title: "Beranda", blocks: blocksHome };
 
   return blocksBySlug;
 }
@@ -319,15 +319,14 @@ async function run() {
   for (const slug of slugs) {
     const page = pages[slug];
     const payload = makePagePayload(slug, page.title, page.blocks, true);
+    const pagePath = slug === "" ? "/pages/root" : `/pages/${slug}`;
     try {
       // check exists
-      const getRes = await axios.get(
-        API_BASE + "/pages/" + (payload.slug === "/" ? "" : payload.slug),
-      );
+      const getRes = await axios.get(API_BASE + pagePath);
       if (getRes.status === 200) {
         // update
         await axios.put(
-          API_BASE + "/pages/" + payload.slug,
+          API_BASE + pagePath,
           {
             title: payload.title,
             content: payload.content,
@@ -335,11 +334,11 @@ async function run() {
           },
           { headers },
         );
-        console.log("Updated page:", payload.slug);
+        console.log("Updated page:", payload.slug === "" ? "/" : payload.slug);
       } else {
         // create
         await axios.post(API_BASE + "/pages", payload, { headers });
-        console.log("Created page:", payload.slug);
+        console.log("Created page:", payload.slug === "" ? "/" : payload.slug);
       }
     } catch (e) {
       // if 404 on GET -> create

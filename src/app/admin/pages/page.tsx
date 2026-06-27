@@ -423,7 +423,7 @@ export default function PagesListPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-white/40 font-mono text-xs">
-                        /{page.slug}
+                        {page.slug === "" ? "/" : `/${page.slug}`}
                       </td>
                       <td className="py-3 px-4">
                         <span
@@ -471,7 +471,11 @@ export default function PagesListPage() {
 
                           <button
                             onClick={() =>
-                              router.push(`/admin/pages/${page.slug}`)
+                              router.push(
+                                page.slug === ""
+                                  ? "/admin/pages/root"
+                                  : `/admin/pages/${page.slug}`,
+                              )
                             }
                             title="Edit"
                             className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors"

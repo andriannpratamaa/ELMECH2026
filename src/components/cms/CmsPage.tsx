@@ -15,40 +15,50 @@ interface CmsPageProps {
 }
 
 export default function CmsPage({ slug, initialData, children }: CmsPageProps) {
-  const [blocks, setBlocks] = useState<ContentBlock[]>(initialData?.content || []);
+  const [blocks, setBlocks] = useState<ContentBlock[]>(
+    initialData?.content || [],
+  );
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // If we have initial data from server, don't fetch again
     if (initialData) {
-      setLoading(false);
       return;
     }
 
-    // Only fetch if no initial data (client-side only usage)
+    let isMounted = true;
+
     getPageBySlug(slug)
       .then((page) => {
+        if (!isMounted) return;
         if (!page) {
           setError(`Halaman "${slug}" tidak ditemukan`);
           setBlocks([]);
           return;
         }
-        
-        // Ensure blocks is array
+
         const content = Array.isArray(page.content) ? page.content : [];
         if (content.length === 0) {
-          console.warn(`[CmsPage] Halaman "${slug}" tidak memiliki content blocks`);
+          console.warn(
+            `[CmsPage] Halaman "${slug}" tidak memiliki content blocks`,
+          );
         }
         setBlocks(content);
         setError(null);
       })
       .catch((err) => {
+        if (!isMounted) return;
         console.error(`[CmsPage] Error mengambil halaman "${slug}":`, err);
         setError(`Gagal memuat halaman "${slug}"`);
         setBlocks([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug, initialData]);
 
   if (loading) {

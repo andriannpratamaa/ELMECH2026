@@ -29,8 +29,8 @@ async function run() {
 
   for (const slugKey of Object.keys(pages)) {
     const meta = pages[slugKey];
-    const slug = slugKey === "" ? "beranda" : slugKey;
-    const title = meta.title || slug;
+    const slug = slugKey;
+    const title = meta.title || (slug === "" ? "Beranda" : slug);
     const blocks = meta.blocks || [];
     const content = JSON.stringify(blocks);
 

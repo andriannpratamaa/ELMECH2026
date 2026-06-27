@@ -474,9 +474,6 @@ router.delete("/:id", verifyToken, async (req, res, next) => {
 });
 
 // GET /api/navbar/pages/available - Get all available CMS pages for admin page selector
-// TEMPORARY: This endpoint is for FUTURE use after page_id migration
-// Currently disabled because pages table uses 'published' not 'active'
-// Will be enabled after migration to page_id-based architecture
 router.get("/pages/available", verifyToken, async (req, res, next) => {
   try {
     console.log("[NAVBAR] Fetching available CMS pages for navbar...");
@@ -491,13 +488,15 @@ router.get("/pages/available", verifyToken, async (req, res, next) => {
 
     console.log(`[NAVBAR] Found ${pages.length} available pages`);
 
+    const normalizeHref = (slug) => (slug === "" ? "/" : `/${slug}`);
+
     res.json({
       success: true,
       data: pages.map((p) => ({
         id: p.id,
         label: p.title,
         slug: p.slug,
-        href: `/${p.slug}`,
+        href: normalizeHref(p.slug),
       })),
     });
   } catch (err) {
