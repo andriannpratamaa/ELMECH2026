@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'; // ganti IP kalau backend di laptop lain
-console.log("API BASE =", API_BASE);
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -34,7 +33,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/admin';
+      window.location.href = `${window.location.origin}/dev/siminspeksi/admin`;
     }
     return Promise.reject(err);
   }
