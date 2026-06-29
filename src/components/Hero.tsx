@@ -42,15 +42,17 @@ export default function Hero({
   title = "PPNS Smart",
   subtitle = "Maritime Campus",
   description = "Portal informasi akademik, inovasi teknologi, berita kampus, dan kolaborasi industri maritim modern.",
-  buttonLink = "#program",
-  buttonText = "Lihat Informasi",
+  buttonLink = "",
+  buttonText = "",
   statsBadge = "Sorotan Kampus",
-  stats = DEFAULT_HERO_STATS,
+  stats,
   statsFooter = "Penerimaan Mahasiswa Baru 2026/2027 dibuka",
   statsCardTitle = "PPNS Raih Akreditasi Unggul 2025",
   statsCardDescription = "Peringkat akreditasi institusi meningkat ke status Unggul dari BAN-PT.",
   image = "https://images.unsplash.com/photo-1562774053-701939374585?w=1920&q=80",
 }: HeroProps) {
+  const statItems = Array.isArray(stats) ? stats : DEFAULT_HERO_STATS;
+
   const scrollTo = (href: string) => {
     document
       .querySelector(href)
@@ -145,23 +147,25 @@ export default function Hero({
               <RichTextRenderer html={description} />
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.7 }}
-              className="flex flex-col sm:flex-row gap-3 pt-1 items-center lg:items-start w-full"
-            >
-              <a
-                href={buttonLink}
-                className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto max-w-[280px] sm:max-w-none px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base font-semibold text-[#0F172A] bg-[#FBBF24] hover:bg-[#FCD34D] hover:scale-[1.02] shadow-2xl shadow-[#FBBF24]/25 transition-all duration-300"
+            {buttonText && buttonLink && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55, duration: 0.7 }}
+                className="flex flex-col sm:flex-row gap-3 pt-1 items-center lg:items-start w-full"
               >
-                {buttonText}
-                <ArrowRight className="w-4 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
-              <button className="inline-flex items-center justify-center gap-2 w-full sm:w-auto max-w-[280px] sm:max-w-none px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base font-semibold text-white/90 border border-white/20 hover:bg-white/10 hover:border-white/30 backdrop-blur-sm transition-all duration-300">
-                Pelajari Lebih Lanjut
-              </button>
-            </motion.div>
+                <a
+                  href={buttonLink}
+                  className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto max-w-[280px] sm:max-w-none px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base font-semibold text-[#0F172A] bg-[#FBBF24] hover:bg-[#FCD34D] hover:scale-[1.02] shadow-2xl shadow-[#FBBF24]/25 transition-all duration-300"
+                >
+                  {buttonText}
+                  <ArrowRight className="w-4 h-5 group-hover:translate-x-1 transition-transform" />
+                </a>
+                <button className="inline-flex items-center justify-center gap-2 w-full sm:w-auto max-w-[280px] sm:max-w-none px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-sm sm:text-base font-semibold text-white/90 border border-white/20 hover:bg-white/10 hover:border-white/30 backdrop-blur-sm transition-all duration-300">
+                  Pelajari Lebih Lanjut
+                </button>
+              </motion.div>
+            )}
           </motion.div>
 
           <motion.div
@@ -196,7 +200,7 @@ export default function Hero({
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
-                {stats.map((stat, index) => {
+                {statItems.map((stat, index) => {
                   const Icon = [BookOpen, Award, Users, MapPin][index % 4];
                   return (
                     <div

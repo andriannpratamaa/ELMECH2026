@@ -12,6 +12,13 @@ import Partners from "@/components/Partners";
 import CTASection from "@/components/CTASection";
 import RichTextRenderer from "@/components/cms/RichTextRenderer";
 
+const DEFAULT_HERO_STATS = [
+  { value: "25+", label: "Program Studi" },
+  { value: "Unggul", label: "Akreditasi" },
+  { value: "10rb+", label: "Mahasiswa Aktif" },
+  { value: "Surabaya", label: "Kampus Utama" },
+];
+
 function normalizeHeroData(data: Record<string, any>) {
   return {
     badge: data.badge,
@@ -22,7 +29,7 @@ function normalizeHeroData(data: Record<string, any>) {
     buttonLink: data.button_link || data.buttonLink,
     buttonText: data.button_text || data.buttonText,
     statsBadge: data.stats_badge || data.statsBadge,
-    stats: data.stats,
+    stats: Array.isArray(data.stats) && data.stats.length > 0 ? data.stats : DEFAULT_HERO_STATS,
     statsFooter: data.stats_footer || data.statsFooter,
     statsCardTitle: data.stats_card_title || data.statsCardTitle,
     statsCardDescription: data.stats_card_description || data.statsCardDescription,
@@ -33,11 +40,13 @@ function normalizeCTA(data: Record<string, any>) {
   return {
     title: data.title,
     description: data.description || data.subtitle,
-    buttons: (data.buttons || []).map((b: any) => ({
-      label: b.label,
-      href: b.link || b.href,
-      variant: b.variant || "primary",
-    })),
+    buttons: (data.buttons || [])
+      .map((b: any) => {
+        const label = b.label || b.buttonText || "";
+        const href = b.link || b.href || b.buttonUrl || "";
+        return { label, href, variant: b.variant || "primary" };
+      })
+      .filter((b: any) => b.label && b.href),
     bgImage: data.bgImage || data.image,
   };
 }

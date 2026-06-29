@@ -266,12 +266,10 @@ export async function uploadFile(file: File): Promise<Media> {
   try {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await api.post("/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await api.post("/upload", formData);
     return res.data.data;
-  } catch (error) {
-    console.error("[CMS] Error upload file:", error);
+  } catch (error: any) {
+    console.error("[CMS] Error upload file:", error?.response?.data || error);
     throw error;
   }
 }

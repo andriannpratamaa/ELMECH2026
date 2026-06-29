@@ -16,8 +16,10 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { getPageBySlug, updatePage, revalidatePageCache } from "@/services/cms";
 import TiptapEditor from "@/components/editor/TiptapEditor";
-import ImageInputField from "@/components/admin/ImageInputField";
+import ImageField from "@/components/admin/ImageField";
+import ImageArrayField from "@/components/admin/ImageArrayField";
 import IconPicker from "@/components/admin/IconPicker";
+import { isImageField, isImageArrayField } from "@/lib/fieldTypes";
 import BlockRenderer from "@/components/cms/BlockRenderer";
 import type { Page, ContentBlock } from "@/types/cms";
 
@@ -170,8 +172,8 @@ function BlockEditor({
       );
     }
 
-    if (field === "items" || field === "buttons" || field === "cards" || field === "bento_items" || field === "programs" || field === "facilities" || field === "kerjasama" || field === "featured" || field === "sejarah" || field === "misi" || field === "pimpinan") {
-      const items: any[] = value || [];
+    if (field === "items" || field === "buttons" || field === "cards" || field === "stats" || field === "bento_items" || field === "programs" || field === "facilities" || field === "kerjasama" || field === "featured" || field === "sejarah" || field === "misi" || field === "pimpinan") {
+      const items: any[] = Array.isArray(value) ? value : [];
       const isObjects = items.length > 0 && typeof items[0] === "object";
       const isStringArray = items.length > 0 && typeof items[0] === "string";
 
@@ -199,6 +201,9 @@ function BlockEditor({
                         description: "Deskripsi",
                         label: "Label",
                         value: "Nilai",
+                        suffix: "Suffix (+, %, dll)",
+                        buttonText: "Teks Tombol",
+                        buttonUrl: "Link Tombol",
                         icon: "Ikon",
                         color: "Warna (from-xxx to-yyy)",
                         image: "URL Gambar",
@@ -220,6 +225,21 @@ function BlockEditor({
                         nama: "Nama",
                         jabatan: "Jabatan",
                       };
+                      if (isImageField(key) && typeof item[key] === "string") {
+                        return (
+                          <div key={key} className="mb-2">
+                            <ImageField
+                              value={item[key] || ""}
+                              onChange={(v) => {
+                                const next = [...items];
+                                next[i] = { ...next[i], [key]: v };
+                                updateField(field, next);
+                              }}
+                              label={placeholderMap[key] || key}
+                            />
+                          </div>
+                        );
+                      }
                       return (
                         <input
                           key={key}
@@ -279,6 +299,7 @@ function BlockEditor({
               if (isObjects || (items.length === 0 && (field === "cards" || field === "pimpinan" || field === "bento_items" || field === "programs" || field === "facilities" || field === "kerjasama" || field === "featured" || field === "items"))) {
                 const defaultKeys: Record<string, string[]> = {
                   cards: ["value", "suffix", "label", "desc"],
+                  stats: ["value", "label"],
                   pimpinan: ["nama", "jabatan"],
                   bento_items: ["title", "desc", "icon", "color", "size", "image"],
                   programs: ["title", "desc", "icon", "color", "image"],
@@ -301,73 +322,36 @@ function BlockEditor({
       );
     }
 
-    if (field === "images") {
-      const images: string[] = value || [];
+    if (isImageArrayField(field)) {
       return (
         <div key={field}>
-          <label className="block text-xs font-medium text-white/50 mb-2 capitalize">
-            Gambar
-          </label>
-          <div className="space-y-3">
-            {images.map((img, i) => (
-              <div key={i} className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    value={img}
-                    onChange={(e) => {
-                      const next = [...images];
-                      next[i] = e.target.value;
-                      updateField(field, next);
-                    }}
-                    placeholder="URL Gambar"
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FBBF24]/40"
-                  />
-                  {img && (
-                    <div className="mt-2 rounded-lg overflow-hidden bg-white/5 border border-white/10 p-2">
-                      <img
-                        src={img}
-                        alt="Preview"
-                        className="w-full h-20 object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() =>
-                    updateField(
-                      field,
-                      images.filter((_, j) => j !== i),
-                    )
-                  }
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 h-fit"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => updateField(field, [...images, ""])}
-            className="text-xs text-[#FBBF24] hover:text-[#FCD34D] transition-colors mt-2"
-          >
-            + Tambah Gambar
-          </button>
+          <ImageArrayField
+            value={Array.isArray(value) ? value : []}
+            onChange={(val) => updateField(field, val)}
+            label={field === "gallery" ? "Galeri" : field === "images" ? "Gambar" : field}
+          />
         </div>
       );
     }
 
-    if (field === "image" || field === "bgImage") {
+    if (isImageField(field)) {
+      const fieldLabels: Record<string, string> = {
+        bgImage: "Gambar Latar",
+        backgroundImage: "Gambar Latar",
+        heroImage: "Gambar Hero",
+        thumbnail: "Thumbnail",
+        cover: "Sampul",
+        logo: "Logo",
+        avatar: "Avatar",
+        iconImage: "Ikon Gambar",
+        banner: "Banner",
+      };
       return (
         <div key={field}>
-          <ImageInputField
+          <ImageField
             value={value}
             onChange={(val) => updateField(field, val)}
-            label={field === "bgImage" ? "Gambar Latar" : "Gambar"}
-            placeholder="Masukkan URL gambar atau pilih dari Media Library"
-            showPreview={true}
+            label={fieldLabels[field] || field}
           />
         </div>
       );
@@ -384,49 +368,7 @@ function BlockEditor({
       );
     }
 
-    if (field === "gallery") {
-      const images: string[] = Array.isArray(value) ? value : [];
-      return (
-        <div key={field}>
-          <label className="block text-xs font-medium text-white/50 mb-2 capitalize">
-            Galeri
-          </label>
-          <div className="space-y-2">
-            {images.map((img, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={img}
-                  onChange={(e) => {
-                    const next = [...images];
-                    next[i] = e.target.value;
-                    updateField(field, next);
-                  }}
-                  placeholder="URL Gambar"
-                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FBBF24]/40"
-                />
-                <button
-                  onClick={() =>
-                    updateField(
-                      field,
-                      images.filter((_, j) => j !== i),
-                    )
-                  }
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => updateField(field, [...images, ""])}
-            className="text-xs text-[#FBBF24] hover:text-[#FCD34D] transition-colors mt-2"
-          >
-            + Tambah Gambar
-          </button>
-        </div>
-      );
-    }
+
 
     if (["visi"].includes(field)) {
       return (

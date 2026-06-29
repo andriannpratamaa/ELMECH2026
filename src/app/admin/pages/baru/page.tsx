@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { createPage, revalidatePageCache } from "@/services/cms";
 import TiptapEditor from "@/components/editor/TiptapEditor";
+import ImageField from "@/components/admin/ImageField";
+import ImageArrayField from "@/components/admin/ImageArrayField";
+import { isImageField, isImageArrayField } from "@/lib/fieldTypes";
 import type { ContentBlock } from "@/types/cms";
 
 const BLOCK_TYPES = [
@@ -121,39 +124,26 @@ function BlockEditor({
       );
     }
 
-    if (field === "images") {
-      const images: string[] = value || [];
+    if (isImageArrayField(field)) {
       return (
         <div key={field}>
-          <label className="block text-xs font-medium text-white/50 mb-2 capitalize">Gambar</label>
-          <div className="space-y-2">
-            {images.map((img, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={img}
-                  onChange={(e) => {
-                    const next = [...images];
-                    next[i] = e.target.value;
-                    updateField(field, next);
-                  }}
-                  placeholder="URL Gambar"
-                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FBBF24]/40"
-                />
-                <button
-                  onClick={() => updateField(field, images.filter((_, j) => j !== i))}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => updateField(field, [...images, ""])}
-            className="text-xs text-[#FBBF24] hover:text-[#FCD34D] transition-colors mt-2"
-          >
-            + Tambah Gambar
-          </button>
+          <ImageArrayField
+            value={Array.isArray(value) ? value : []}
+            onChange={(val) => updateField(field, val)}
+            label={field === "gallery" ? "Galeri" : "Gambar"}
+          />
+        </div>
+      );
+    }
+
+    if (isImageField(field)) {
+      return (
+        <div key={field}>
+          <ImageField
+            value={value}
+            onChange={(val) => updateField(field, val)}
+            label={field}
+          />
         </div>
       );
     }
