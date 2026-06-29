@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getPageBySlug, updatePage, revalidatePageCache } from "@/services/cms";
+import { getPageBySlug, updatePage, revalidatePageCache, updatePageSlug } from "@/services/cms";
 import TiptapEditor from "@/components/editor/TiptapEditor";
 import ImageField from "@/components/admin/ImageField";
 import ImageArrayField from "@/components/admin/ImageArrayField";
@@ -442,8 +442,9 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
   const [saving, setSaving] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [editSlug, setEditSlug] = useState(slug);
 
-  const apiSlug = slug;
+  const apiSlug = editSlug;
 
   useEffect(() => {
     getPageBySlug(apiSlug)
@@ -452,6 +453,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
           setPage(p);
           setTitle(p.title);
           setBlocks(Array.isArray(p.content) ? p.content : []);
+          setEditSlug(p.slug);
         }
       })
       .catch(() => toast.error("Gagal memuat halaman"))
@@ -462,7 +464,13 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
     setSaving(true);
     try {
       await updatePage(slug, { title, content: blocks });
-      await revalidatePageCache(slug);
+      if (editSlug !== slug) {
+        await updatePageSlug(slug, editSlug);
+        await revalidatePageCache(editSlug);
+        router.replace(`/admin/pages/${editSlug}`);
+      } else {
+        await revalidatePageCache(slug);
+      }
       toast.success("Halaman berhasil disimpan");
     } catch {
       toast.error("Gagal menyimpan halaman");
@@ -557,9 +565,26 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
             <h1 className="text-xl font-bold text-white font-[family-name:var(--font-display)]">
               Edit Halaman
             </h1>
-            <p className="text-sm text-white/40 mt-1">
-              {slug === "" ? "/" : `/${slug}`}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-white/30">/</span>
+              <input
+                type="text"
+                value={editSlug}
+                onChange={(e) =>
+                  setEditSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                  )
+                }
+                className="bg-transparent text-sm text-white/60 border-b border-white/10 focus:border-white/30 outline-none px-1 py-0.5 min-w-[80px] transition-colors"
+                disabled={slug === ""}
+                placeholder="slug-halaman"
+              />
+              {editSlug !== slug && (
+                <span className="text-[11px] text-amber-400/80">
+                  ⚡ slug akan diubah
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-2">

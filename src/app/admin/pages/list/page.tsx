@@ -496,7 +496,8 @@ export default function PagesListPage() {
                   {pages.map((page) => (
                     <tr
                       key={page.id}
-                      className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]"
+                      onClick={() => handleEditPage(page)}
+                      className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] cursor-pointer"
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
@@ -553,31 +554,14 @@ export default function PagesListPage() {
                             )}
                           </button>
 
-                          <button
-                            onClick={() => handleEditPage(page)}
-                            title="Edit"
-                            className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-
                           {page.slug !== "" && (
-                            <>
-                              <button
-                                onClick={() => handleCopyPage(page)}
-                                title="Salin halaman"
-                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleEditSlug(page)}
-                                title="Ubah slug"
-                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-[#FBBF24] transition-colors"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleCopyPage(page)}
+                              title="Salin halaman"
+                              className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
                           )}
 
                           <a
