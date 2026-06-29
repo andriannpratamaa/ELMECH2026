@@ -46,12 +46,12 @@ const BLOCK_TYPES = [
   {
     type: "text",
     label: "Konten Teks",
-    fields: ["badge", "title", "highlight", "description", "body"],
+    fields: ["badge", "title", "highlight", "description", "body", "section_color"],
   },
   {
     type: "features",
     label: "Grid Fitur",
-    fields: ["badge", "title", "highlight", "description", "items"],
+    fields: ["badge", "title", "highlight", "description", "items", "section_color", "item_color"],
   },
   {
     type: "statistics",
@@ -296,7 +296,7 @@ function BlockEditor({
           <button
             onClick={() => {
               let newItem: any = "";
-              if (isObjects || (items.length === 0 && (field === "cards" || field === "pimpinan" || field === "bento_items" || field === "programs" || field === "facilities" || field === "kerjasama" || field === "featured" || field === "items"))) {
+              if (isObjects || (items.length === 0 && (field === "cards" || field === "pimpinan" || field === "bento_items" || field === "programs" || field === "facilities" || field === "kerjasama" || field === "featured" || field === "items" || field === "buttons"))) {
                 const defaultKeys: Record<string, string[]> = {
                   cards: ["value", "suffix", "label", "desc"],
                   stats: ["value", "label"],
@@ -396,12 +396,20 @@ function BlockEditor({
               ? "Teks Tombol"
               : field === "button_link"
                 ? "Link Tombol"
-                : field}
+                : field === "section_color"
+                  ? "Warna Latar (hex)"
+                  : field === "item_color"
+                    ? "Warna Item (hex)"
+                    : field}
         </label>
         <input
           value={value}
           onChange={(e) => updateField(field, e.target.value)}
-          placeholder={`Masukkan ${field}`}
+          placeholder={
+            field === "section_color" || field === "item_color"
+              ? "Contoh: #F8FAFC"
+              : `Masukkan ${field}`
+          }
           className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FBBF24]/40"
         />
       </div>

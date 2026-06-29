@@ -14,8 +14,8 @@ import type { ContentBlock } from "@/types/cms";
 
 const BLOCK_TYPES = [
   { type: "hero", label: "Bagian Hero", fields: ["title", "subtitle", "badge", "description", "image", "button_text", "button_link", "stats"] },
-  { type: "text", label: "Konten Teks", fields: ["badge", "title", "highlight", "description", "body"] },
-  { type: "features", label: "Grid Fitur", fields: ["badge", "title", "description", "items"] },
+  { type: "text", label: "Konten Teks", fields: ["badge", "title", "highlight", "description", "body", "section_color"] },
+  { type: "features", label: "Grid Fitur", fields: ["badge", "title", "description", "items", "section_color", "item_color"] },
   { type: "stats", label: "Statistik", fields: ["badge", "title", "items"] },
   { type: "gallery", label: "Galeri Gambar", fields: ["title", "images"] },
   { type: "cta", label: "Ajakan Bertindak", fields: ["title", "subtitle", "button_text", "button_link", "buttons"] },
@@ -71,7 +71,7 @@ function BlockEditor({
                       value={item.title || item.label || ""}
                       onChange={(e) => {
                         const next = [...items];
-                        next[i] = { ...next[i], title: e.target.value, label: e.target.value };
+                        next[i] = { ...next[i], title: e.target.value, label: e.target.value, buttonText: e.target.value };
                         updateField(field, next);
                       }}
                       placeholder="Judul/Label"
@@ -82,7 +82,7 @@ function BlockEditor({
                         value={item.link || ""}
                         onChange={(e) => {
                           const next = [...items];
-                          next[i] = { ...next[i], link: e.target.value };
+                          next[i] = { ...next[i], link: e.target.value, buttonUrl: e.target.value };
                           updateField(field, next);
                         }}
                         placeholder="Link"
@@ -113,7 +113,7 @@ function BlockEditor({
           </div>
           <button
             onClick={() => {
-              const newItem = field === "buttons" ? { label: "", link: "" } : "";
+              const newItem = field === "buttons" ? { label: "", link: "", buttonText: "", buttonUrl: "" } : "";
               updateField(field, [...items, newItem]);
             }}
             className="text-xs text-[#FBBF24] hover:text-[#FCD34D] transition-colors mt-2"
@@ -151,12 +151,26 @@ function BlockEditor({
     return (
       <div key={field}>
         <label className="block text-xs font-medium text-white/50 mb-2 capitalize">
-          {field === "highlight" ? "Teks Highlight" : field === "button_text" ? "Teks Tombol" : field === "button_link" ? "Link Tombol" : field}
+          {field === "highlight"
+            ? "Teks Highlight"
+            : field === "button_text"
+              ? "Teks Tombol"
+              : field === "button_link"
+                ? "Link Tombol"
+                : field === "section_color"
+                  ? "Warna Latar (hex)"
+                  : field === "item_color"
+                    ? "Warna Item (hex)"
+                    : field}
         </label>
         <input
           value={value}
           onChange={(e) => updateField(field, e.target.value)}
-          placeholder={`Masukkan ${field}`}
+          placeholder={
+            field === "section_color" || field === "item_color"
+              ? "Contoh: #F8FAFC"
+              : `Masukkan ${field}`
+          }
           className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FBBF24]/40"
         />
       </div>

@@ -38,24 +38,39 @@ function normalizeHeroData(data: Record<string, any>) {
 }
 
 function normalizeCTA(data: Record<string, any>) {
+  let buttons = Array.isArray(data.buttons) ? [...data.buttons] : [];
+  const standaloneText = data.button_text || data.buttonText || "";
+  const standaloneLink = data.button_link || data.buttonLink || "";
+
+      const toButton = (b: any) => {
+        if (typeof b === "string") {
+          return { label: b, href: standaloneLink, variant: "primary" as const };
+        }
+        return {
+          label: b.label || b.buttonText || b.title || standaloneText || "",
+          href: b.link || b.href || b.buttonUrl || b.button_link || standaloneLink || "",
+          variant: b.variant || "primary",
+        };
+      };
+
+  if (buttons.length === 0 && standaloneText && standaloneLink) {
+    buttons = [{ label: standaloneText, href: standaloneLink }];
+  }
+
   return {
     title: data.title,
     description: data.description || data.subtitle,
-    buttons: (data.buttons || [])
-      .map((b: any) => {
-        const label = b.label || b.buttonText || "";
-        const href = b.link || b.href || b.buttonUrl || "";
-        return { label, href, variant: b.variant || "primary" };
-      })
-      .filter((b: any) => b.label && b.href),
+    buttons: buttons.map(toButton).filter((b) => b.label && b.href),
     bgImage: data.bgImage || data.image,
   };
 }
 
 function TextBlock({ data }: { data: Record<string, any> }) {
+  const sectionColor = data.section_color || data.sectionColor || "";
   return (
-    <section className="py-20 bg-[#F8FAFC]">
-      <div className="max-w-4xl mx-auto px-4 md:px-8 lg:px-12">
+    <section className="py-20" style={sectionColor ? { backgroundColor: sectionColor } : { backgroundColor: "#F8FAFC" }}>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-4xl">
         {data.badge && (
           <motion.span initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-block px-3 py-1 rounded-full bg-[#FBBF24]/10 text-[#FBBF24] text-xs font-semibold mb-4">
             {data.badge}
@@ -77,14 +92,17 @@ function TextBlock({ data }: { data: Record<string, any> }) {
           </motion.div>
         )}
       </div>
+      </div>
     </section>
   );
 }
 
 function FeaturesBlock({ data }: { data: Record<string, any> }) {
   const items: any[] = data.items || [];
+  const sectionColor = data.section_color || data.sectionColor || "";
+  const itemColor = data.item_color || data.itemColor || "";
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20" style={sectionColor ? { backgroundColor: sectionColor } : { backgroundColor: "#ffffff" }}>
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         {data.badge && (
           <motion.span initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="inline-block px-3 py-1 rounded-full bg-[#FBBF24]/10 text-[#FBBF24] text-xs font-semibold mb-4">
@@ -103,7 +121,18 @@ function FeaturesBlock({ data }: { data: Record<string, any> }) {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item: any, i: number) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="group rounded-2xl bg-white border border-gray-100 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="group rounded-2xl border p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              style={{
+                backgroundColor: itemColor || "#ffffff",
+                borderColor: itemColor ? "transparent" : "#e5e7eb",
+              }}
+            >
               {item.icon && (
                 <div className="w-12 h-12 rounded-xl bg-[#FBBF24]/10 flex items-center justify-center mb-4 group-hover:bg-[#FBBF24]/20 transition-colors">
                   <span className="text-2xl">{item.icon}</span>
@@ -132,7 +161,7 @@ function GalleryBlock({ data }: { data: Record<string, any> }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {images.map((img: any, i: number) => (
             <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="group relative aspect-[4/3] rounded-2xl overflow-hidden">
-              <img src={img.image || img} alt={img.title || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              {img.image || img ? <img src={img.image || img} alt={img.title || ""} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm">No image</div>}
               {img.title && (
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                   <div>
