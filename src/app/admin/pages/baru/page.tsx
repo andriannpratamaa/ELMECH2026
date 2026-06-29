@@ -221,7 +221,7 @@ export default function CreatePagePage() {
       await revalidatePageCache(slug);
       
       toast.success("Halaman berhasil dibuat");
-      router.push("/admin/pages");
+      router.push("/admin/pages/list");
     } catch (error: any) {
       console.error('Save error:', error);
       const errorMsg = error.response?.data?.message || 'Gagal membuat halaman';
@@ -260,7 +260,7 @@ export default function CreatePagePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/admin/pages" className="p-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors">
+          <Link href="/admin/pages/list" className="p-2 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>

@@ -8,10 +8,26 @@ const API_BASE = normalizedBase.endsWith("/api")
   : `${normalizedBase}/api`;
 
 export function normalizeCmsSlug(slug: string): string {
-  if (slug === "" || slug === "/" || slug === "root") {
+  if (slug === "" || slug === "/" || slug === "root" || slug === "beranda") {
     return "root";
   }
   return slug;
+}
+
+export function findCmsBlock(page: Page | null, type: string) {
+  return page?.content?.find((block) => block.type === type)?.data ?? null;
+}
+
+export function buildCmsSections(page: Page | null) {
+  return (
+    page?.content?.reduce(
+      (sections, block) => {
+        sections[block.type] = block.data;
+        return sections;
+      },
+      {} as Record<string, any>,
+    ) ?? {}
+  );
 }
 
 export async function fetchCmsPage(slug: string): Promise<Page | null> {

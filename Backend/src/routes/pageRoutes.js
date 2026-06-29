@@ -11,7 +11,31 @@ function isValidSlug(slug) {
 function validateContentBlocks(blocks) {
   if (!Array.isArray(blocks)) return false;
 
-  const validTypes = ["hero", "text", "features", "stats", "gallery", "cta"];
+  const validTypes = [
+    "hero",
+    "text",
+    "features",
+    "stats",
+    "gallery",
+    "cta",
+    // additional page-specific blocks
+    "about",
+    "program",
+    "news",
+    "contact",
+    "partners",
+    "statistics",
+    "pagehero",
+    "highlights",
+    "timeline",
+    "achievements",
+    "aboutdetail",
+    "bento",
+    "programs",
+    "facilities",
+    "kerjasama",
+    "documents",
+  ];
 
   return blocks.every((block) => {
     if (!block.type || !validTypes.includes(block.type)) return false;
@@ -21,6 +45,113 @@ function validateContentBlocks(blocks) {
 }
 
 const ROOT_PAGE_SLUG = "";
+
+// Default block definitions for the `beranda` page.
+function getDefaultBerandaBlocks() {
+  return [
+    {
+      type: "hero",
+      data: {
+        badge: "",
+        title: "",
+        subtitle: "",
+        description: "",
+        image: "",
+        button_text: "",
+        button_link: "",
+        stats_badge: "",
+        stats: [],
+        stats_footer: "",
+      },
+    },
+    {
+      type: "about",
+      data: {
+        title: "",
+        description: "",
+        statistics: [],
+      },
+    },
+    {
+      type: "statistics",
+      data: {
+        cards: [],
+      },
+    },
+    {
+      type: "program",
+      data: {
+        badge: "",
+        title: "",
+        subtitle: "",
+        bentoItems: [],
+        programs: [],
+        facilities: [],
+        kerjasama: [],
+      },
+    },
+    {
+      type: "news",
+      data: {
+        headline: null,
+        featured: [],
+        items: [],
+      },
+    },
+    {
+      type: "gallery",
+      data: {
+        title: "",
+        images: [],
+      },
+    },
+    {
+      type: "contact",
+      data: {
+        title: "",
+        address: "",
+        phone: "",
+        email: "",
+        map: "",
+      },
+    },
+    {
+      type: "partners",
+      data: {
+        title: "",
+        items: [],
+      },
+    },
+    {
+      type: "cta",
+      data: {
+        title: "",
+        subtitle: "",
+        description: "",
+        button: { label: "", link: "" },
+        image: "",
+      },
+    },
+  ];
+}
+
+function ensureBerandaContent(blocks) {
+  const defaults = getDefaultBerandaBlocks();
+  const map = new Map();
+  if (Array.isArray(blocks)) {
+    for (const b of blocks) {
+      if (b && b.type) map.set(b.type, b.data || {});
+    }
+  }
+
+  // Merge: keep existing data when present, otherwise use default
+  return defaults.map((def) => {
+    const existing = map.get(def.type);
+    if (!existing) return { type: def.type, data: def.data };
+    // shallow merge so admin-supplied fields are preserved
+    return { type: def.type, data: { ...def.data, ...existing } };
+  });
+}
 
 async function getRootPage(req, res, next) {
   try {
@@ -241,7 +372,8 @@ router.post("/root/unpublish", verifyToken, async (req, res, next) => {
 // GET /api/pages/:slug - Ambil halaman berdasarkan slug
 router.get("/:slug", async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
 
     const [pages] = await pool.query("SELECT * FROM pages WHERE slug = ?", [
       slug,
@@ -256,11 +388,16 @@ router.get("/:slug", async (req, res, next) => {
       });
     }
 
-    const page = pages[0];
+    let page = pages[0];
     page.content =
       typeof page.content === "string"
         ? JSON.parse(page.content)
         : page.content;
+
+    // If requested page is the root (or legacy 'beranda'), ensure all required blocks exist
+    if (slug === ROOT_PAGE_SLUG || slug === "beranda") {
+      page.content = ensureBerandaContent(page.content);
+    }
 
     res.json({ success: true, data: page });
   } catch (err) {
@@ -273,6 +410,8 @@ router.get("/:slug", async (req, res, next) => {
 router.post("/", verifyToken, async (req, res, next) => {
   try {
     const { slug, title, content, published } = req.body;
+    // Normalize legacy 'beranda' to canonical root slug "" to avoid creating 'beranda'
+    const normalizedSlug = slug === "beranda" ? ROOT_PAGE_SLUG : slug;
 
     // Validasi input
     if (slug === undefined || slug === null || !title || !content) {
@@ -284,7 +423,7 @@ router.post("/", verifyToken, async (req, res, next) => {
     }
 
     // Validasi slug format
-    if (!isValidSlug(slug)) {
+    if (!isValidSlug(normalizedSlug)) {
       return res.status(400).json({
         success: false,
         message:
@@ -293,8 +432,16 @@ router.post("/", verifyToken, async (req, res, next) => {
       });
     }
 
+    // Jika membuat halaman beranda (root or legacy 'beranda'), isi default block jika perlu
+    let finalContent = content;
+    if (normalizedSlug === ROOT_PAGE_SLUG) {
+      finalContent = ensureBerandaContent(
+        Array.isArray(content) ? content : [],
+      );
+    }
+
     // Validasi content blocks
-    if (!validateContentBlocks(content)) {
+    if (!validateContentBlocks(finalContent)) {
       return res.status(400).json({
         success: false,
         message:
@@ -305,7 +452,7 @@ router.post("/", verifyToken, async (req, res, next) => {
 
     // Cek apakah slug sudah ada
     const [existing] = await pool.query("SELECT id FROM pages WHERE slug = ?", [
-      slug,
+      normalizedSlug,
     ]);
     if (existing.length > 0) {
       return res.status(409).json({
@@ -316,10 +463,10 @@ router.post("/", verifyToken, async (req, res, next) => {
     }
 
     // Buat halaman baru
-    const contentJson = JSON.stringify(content);
+    const contentJson = JSON.stringify(finalContent);
     const [result] = await pool.query(
       "INSERT INTO pages (slug, title, content, published) VALUES (?, ?, ?, ?)",
-      [slug, title, contentJson, published ?? true],
+      [normalizedSlug, title, contentJson, published ?? true],
     );
 
     console.log(
@@ -329,7 +476,12 @@ router.post("/", verifyToken, async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: "Halaman berhasil dibuat",
-      data: { id: result.insertId, slug, title, published: published ?? true },
+      data: {
+        id: result.insertId,
+        slug: normalizedSlug,
+        title,
+        published: published ?? true,
+      },
     });
   } catch (err) {
     console.error("[PAGES] Error saat membuat halaman:", err);
@@ -340,7 +492,8 @@ router.post("/", verifyToken, async (req, res, next) => {
 // PUT /api/pages/:slug - Update halaman
 router.put("/:slug", verifyToken, async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
     const { title, content, published } = req.body;
 
     // Validasi input
@@ -352,8 +505,15 @@ router.put("/:slug", verifyToken, async (req, res, next) => {
       });
     }
 
-    // Validasi content blocks
-    if (!validateContentBlocks(content)) {
+    // Validasi content blocks (special-case root/legacy 'beranda')
+    let finalContent = content;
+    if (slug === ROOT_PAGE_SLUG || slug === "beranda") {
+      finalContent = ensureBerandaContent(
+        Array.isArray(content) ? content : [],
+      );
+    }
+
+    if (!validateContentBlocks(finalContent)) {
       return res.status(400).json({
         success: false,
         message:
@@ -368,7 +528,7 @@ router.put("/:slug", verifyToken, async (req, res, next) => {
     ]);
     if (existing.length === 0) {
       // Jika belum ada, buat halaman baru (backward compatibility)
-      const contentJson = JSON.stringify(content);
+      const contentJson = JSON.stringify(finalContent);
       const [result] = await pool.query(
         "INSERT INTO pages (slug, title, content, published) VALUES (?, ?, ?, ?)",
         [slug, title, contentJson, published ?? true],
@@ -407,7 +567,8 @@ router.put("/:slug", verifyToken, async (req, res, next) => {
 // DELETE /api/pages/:slug - Hapus halaman
 router.delete("/:slug", verifyToken, async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
 
     // Cek apakah halaman ada
     const [existing] = await pool.query("SELECT id FROM pages WHERE slug = ?", [
@@ -439,7 +600,8 @@ router.delete("/:slug", verifyToken, async (req, res, next) => {
 // POST /api/pages/:slug/publish - Publikasikan halaman
 router.post("/:slug/publish", verifyToken, async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
 
     // Cek apakah halaman ada
     const [existing] = await pool.query("SELECT id FROM pages WHERE slug = ?", [
@@ -474,7 +636,8 @@ router.post("/:slug/publish", verifyToken, async (req, res, next) => {
 // POST /api/pages/:slug/unpublish - Batalkan publikasi halaman
 router.post("/:slug/unpublish", verifyToken, async (req, res, next) => {
   try {
-    const { slug } = req.params;
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
 
     // Cek apakah halaman ada
     const [existing] = await pool.query("SELECT id FROM pages WHERE slug = ?", [

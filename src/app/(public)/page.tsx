@@ -1,5 +1,3 @@
-import type { Metadata } from "next";
-import CmsPage from "@/components/cms/CmsPage";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import BerandaProgram from "@/components/BerandaProgram";
@@ -7,41 +5,69 @@ import BerandaNews from "@/components/BerandaNews";
 import BerandaGallery from "@/components/BerandaGallery";
 import BerandaKontak from "@/components/BerandaKontak";
 import Partners from "@/components/Partners";
-import { fetchCmsPage } from "@/lib/cms";
+import { fetchCmsPage, buildCmsSections } from "@/lib/cms";
 
-const slug = "root";
-
-export async function generateMetadata(): Promise<Metadata> {
-  const page = await fetchCmsPage(slug);
-  return {
-    title: page?.title ?? "PPNS - Pendidikan Maritim Indonesia",
-    description:
-      page?.title ??
-      "Situs resmi PPNS dengan informasi program, berita, galeri, dan kontak.",
-  };
-}
-
-export default async function HomePage() {
-  const page = await fetchCmsPage(slug);
-  const cmsContent =
-    page && page.published
-      ? Array.isArray(page.content)
-        ? page.content
-        : []
-      : undefined;
+export default async function Home() {
+  const page = await fetchCmsPage("");
+  const sections = buildCmsSections(page);
 
   return (
     <>
-      <Hero />
-      <About />
-      <BerandaProgram />
-      <BerandaNews />
-      <BerandaGallery />
-      <BerandaKontak />
-      <Partners />
-      {cmsContent ? (
-        <CmsPage slug={slug} initialData={{ content: cmsContent }} />
-      ) : null}
+      <Hero {...sections.hero} />
+      <About
+        statistics={
+          Array.isArray(sections.statistics?.cards)
+            ? sections.statistics.cards
+            : undefined
+        }
+      />
+      <BerandaProgram
+        programs={
+          Array.isArray(sections.program?.programs)
+            ? sections.program.programs
+            : undefined
+        }
+        bentoItems={
+          Array.isArray(sections.program?.bentoItems)
+            ? sections.program.bentoItems
+            : undefined
+        }
+        facilities={
+          Array.isArray(sections.program?.facilities)
+            ? sections.program.facilities
+            : undefined
+        }
+        kerjasama={
+          Array.isArray(sections.program?.kerjasama)
+            ? sections.program.kerjasama
+            : undefined
+        }
+      />
+      <BerandaNews
+        items={
+          Array.isArray(sections.news?.items) ? sections.news.items : undefined
+        }
+        trending={
+          Array.isArray(sections.news?.featured)
+            ? sections.news.featured
+            : undefined
+        }
+      />
+      <BerandaGallery
+        items={
+          Array.isArray(sections.gallery?.images)
+            ? sections.gallery.images
+            : undefined
+        }
+      />
+      <BerandaKontak contactInfo={sections.contact} />
+      <Partners
+        partners={
+          Array.isArray(sections.partners?.items)
+            ? sections.partners.items
+            : undefined
+        }
+      />
     </>
   );
 }

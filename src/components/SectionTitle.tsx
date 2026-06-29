@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import type { SectionTitleProps } from '@/types';
+import RichTextRenderer from '@/components/cms/RichTextRenderer';
 
 export default function SectionTitle({ badge, title, highlight, description, align = 'center' }: SectionTitleProps) {
   return (
@@ -27,9 +28,9 @@ export default function SectionTitle({ badge, title, highlight, description, ali
         )}
       </h2>
       {description && (
-        <p className="text-base sm:text-lg text-gray-500 leading-relaxed mt-4 sm:mt-6 max-w-2xl">
-          {description}
-        </p>
+        <div className="mt-4 sm:mt-6 max-w-2xl mx-auto [&_.cms-rich-text_p]:text-base [&_.cms-rich-text_p]:sm:text-lg [&_.cms-rich-text_p]:text-gray-500 [&_.cms-rich-text_p]:leading-relaxed [&_.cms-rich-text_p]:mb-0">
+          <RichTextRenderer html={description} />
+        </div>
       )}
     </motion.div>
   );

@@ -9,8 +9,8 @@ export interface BreadcrumbItem {
 }
 
 export interface Statistic {
-  value: number;
-  suffix: string;
+  value: number | string;
+  suffix?: string;
   label: string;
   desc: string;
 }
@@ -44,7 +44,7 @@ export interface BentoItem {
   desc: string;
   icon: string;
   color: string;
-  size: 'large' | 'wide' | 'tall' | 'small';
+  size: "large" | "wide" | "tall" | "small";
   image: string;
 }
 
@@ -118,7 +118,7 @@ export interface Facility {
 export interface CTAButton {
   label: string;
   href: string;
-  variant: 'primary' | 'secondary';
+  variant: "primary" | "secondary";
 }
 
 export interface CTASectionProps {
@@ -133,7 +133,7 @@ export interface SectionTitleProps {
   title: string;
   highlight?: string;
   description?: string;
-  align?: 'center' | 'left';
+  align?: "center" | "left";
 }
 
 export interface StatCardProps {

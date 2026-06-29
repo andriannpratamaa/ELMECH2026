@@ -1,20 +1,31 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Calendar, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
-import { getNews } from '@/services/api';
-const NEWS_ITEMS = getNews();
+import { motion } from "framer-motion";
+import { Calendar, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import type { NewsItem } from "@/types";
+
+interface BerandaNewsProps {
+  items?: NewsItem[];
+  trending?: NewsItem[];
+}
+
+interface BerandaNewsProps {
+  items?: NewsItem[];
+  trending?: NewsItem[];
+}
 
 const tagColors: Record<string, string> = {
-  Energi: 'bg-blue-100 text-blue-700',
-  Prestasi: 'bg-amber-100 text-amber-700',
-  Kerjasama: 'bg-emerald-100 text-emerald-700',
-  Inovasi: 'bg-purple-100 text-purple-700',
+  Energi: "bg-blue-100 text-blue-700",
+  Prestasi: "bg-amber-100 text-amber-700",
+  Kerjasama: "bg-emerald-100 text-emerald-700",
+  Inovasi: "bg-purple-100 text-purple-700",
 };
 
-export default function BerandaNews() {
-  const items = NEWS_ITEMS.slice(0, 3);
+export default function BerandaNews({ items, trending }: BerandaNewsProps) {
+  const NEWS_ITEMS = items ?? [];
+  const TRENDING_ITEMS = trending ?? NEWS_ITEMS.slice(0, 3);
+  const itemsToShow = NEWS_ITEMS.slice(0, 3);
   return (
     <section className="relative py-28 sm:py-36 lg:py-44 bg-white overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
@@ -23,7 +34,7 @@ export default function BerandaNews() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: '-100px' }}
+          viewport={{ once: false, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 sm:mb-20 gap-6"
         >
@@ -33,7 +44,7 @@ export default function BerandaNews() {
               Berita & Artikel
             </span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0F172A] leading-[1.1] font-[family-name:var(--font-display)]">
-              Berita{' '}
+              Berita{" "}
               <span className="bg-gradient-to-r from-[#0F172A] to-[#1E3A8A] bg-clip-text text-transparent">
                 Terkini
               </span>
@@ -49,13 +60,17 @@ export default function BerandaNews() {
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item, i) => (
+          {itemsToShow.map((item, i) => (
             <Link key={item.title} href={`/berita/${item.slug}`}>
               <motion.article
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, margin: '-80px' }}
-                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                viewport={{ once: false, margin: "-80px" }}
+                transition={{
+                  duration: 0.6,
+                  delay: i * 0.1,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
                 className="news-card group cursor-pointer"
               >
                 <div className="relative overflow-hidden h-48 sm:h-56">
@@ -66,7 +81,9 @@ export default function BerandaNews() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                   <div className="absolute top-4 left-4">
-                    <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold ${tagColors[item.tag] || 'bg-gray-100 text-gray-700'}`}>
+                    <span
+                      className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold ${tagColors[item.tag] || "bg-gray-100 text-gray-700"}`}
+                    >
                       {item.tag}
                     </span>
                   </div>

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/pages", icon: FileText, label: "Konten" },
+  { href: "/admin/pages/list", icon: FileText, label: "Konten" },
   { href: "/admin/media", icon: Image, label: "Media" },
 ];
 

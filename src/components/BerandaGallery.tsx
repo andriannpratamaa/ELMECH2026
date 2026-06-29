@@ -1,20 +1,27 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { getGalleryItems } from '@/services/api';
-const GALLERY_ITEMS = getGalleryItems();
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import type { GalleryItem } from "@/types";
 
-export default function BerandaGallery() {
-  const items = GALLERY_ITEMS.slice(0, 6);
+interface BerandaGalleryProps {
+  items?: GalleryItem[];
+}
+
+interface BerandaGalleryProps {
+  items?: GalleryItem[];
+}
+
+export default function BerandaGallery({ items }: BerandaGalleryProps) {
+  const galleryItems = (items ?? []).slice(0, 6);
   return (
     <section className="relative py-28 sm:py-36 lg:py-44 bg-[#F8FAFC] overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: '-100px' }}
+          viewport={{ once: false, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-3xl mb-16 sm:mb-20"
         >
@@ -23,7 +30,7 @@ export default function BerandaGallery() {
             Galeri
           </span>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0F172A] leading-[1.1] font-[family-name:var(--font-display)]">
-            Jelajahi{' '}
+            Jelajahi{" "}
             <span className="bg-gradient-to-r from-[#0F172A] to-[#1E3A8A] bg-clip-text text-transparent">
               Kampus Kami
             </span>
@@ -31,13 +38,17 @@ export default function BerandaGallery() {
         </motion.div>
 
         <div className="gallery-grid-premium mb-12">
-          {items.map((item, i) => (
+          {galleryItems.map((item, i) => (
             <motion.div
               key={item.title}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: false, margin: '-80px' }}
-              transition={{ duration: 0.6, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{ once: false, margin: "-80px" }}
+              transition={{
+                duration: 0.6,
+                delay: i * 0.08,
+                ease: [0.16, 1, 0.3, 1],
+              }}
               className="gallery-item"
             >
               <div className="w-full h-full min-h-[200px] sm:min-h-[240px] relative overflow-hidden">
@@ -46,7 +57,9 @@ export default function BerandaGallery() {
                   alt={item.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-40 mix-blend-multiply`} />
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-40 mix-blend-multiply`}
+                />
               </div>
               <div className="gallery-overlay">
                 <div>

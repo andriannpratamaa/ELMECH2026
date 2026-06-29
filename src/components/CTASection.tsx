@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { CTASectionProps } from '@/types';
+import RichTextRenderer from '@/components/cms/RichTextRenderer';
 
 export default function CTASection({ title, description, buttons, bgImage }: CTASectionProps) {
   return (
@@ -22,7 +23,9 @@ export default function CTASection({ title, description, buttons, bgImage }: CTA
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#FBBF24]/5 blur-3xl" />
           <div className="relative z-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-display)]">{title}</h2>
-            <p className="text-blue-200/70 max-w-xl mx-auto mb-6 sm:mb-8 text-sm sm:text-base">{description}</p>
+            <div className="max-w-xl mx-auto mb-6 sm:mb-8 [&_.cms-rich-text]:text-sm [&_.cms-rich-text]:sm:text-base [&_.cms-rich-text]:text-blue-200/70 [&_.cms-rich-text_p]:text-sm [&_.cms-rich-text_p]:sm:text-base [&_.cms-rich-text_p]:text-blue-200/70 [&_.cms-rich-text_p]:leading-relaxed [&_.cms-rich-text_p]:mb-0">
+              <RichTextRenderer html={description || ""} />
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {buttons.map((btn) => (
                 btn.variant === 'primary' ? (

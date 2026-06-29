@@ -1,14 +1,29 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { getPartners } from '@/services/api';
-const PARTNERS = getPartners();
+import { motion } from "framer-motion";
+import type { Partner } from "@/types";
 
-const LOGOS = [...PARTNERS, ...PARTNERS, ...PARTNERS];
+interface PartnersProps {
+  partners?: Partner[];
+}
 
-export default function Partners() {
+const makeLogoGrid = (partners: Partner[]) => [
+  ...partners,
+  ...partners,
+  ...partners,
+];
+
+export default function Partners({ partners }: PartnersProps) {
+  const partnersData = partners ?? [];
+  const LOGOS = makeLogoGrid(partnersData);
   return (
-    <section className="relative py-16 sm:py-20 lg:py-28 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F4C81 0%, #1a3a6b 50%, #0d3b6e 100%)' }}>
+    <section
+      className="relative py-16 sm:py-20 lg:py-28 overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, #0F4C81 0%, #1a3a6b 50%, #0d3b6e 100%)",
+      }}
+    >
       <div className="absolute inset-0 opacity-[0.04]">
         <svg className="w-full h-full" viewBox="0 0 1440 400">
           <circle cx="200" cy="150" r="200" fill="#3B82F6" />
@@ -22,7 +37,7 @@ export default function Partners() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: '-80px' }}
+          viewport={{ once: false, margin: "-80px" }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
         >
@@ -31,13 +46,14 @@ export default function Partners() {
             Mitra Strategis
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-4 sm:mb-6 font-[family-name:var(--font-display)]">
-            Mitra &{' '}
+            Mitra &{" "}
             <span className="bg-gradient-to-r from-blue-300 to-blue-100 bg-clip-text text-transparent">
               Kolaborasi
             </span>
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-blue-100/70 leading-relaxed max-w-2xl mx-auto">
-            Bersama mitra strategis dari berbagai sektor, kami mewujudkan kampus hijau yang berkelanjutan dan berdaya saing global.
+            Bersama mitra strategis dari berbagai sektor, kami mewujudkan kampus
+            hijau yang berkelanjutan dan berdaya saing global.
           </p>
         </motion.div>
       </div>

@@ -8,7 +8,8 @@ import type { Profile } from "@/types/cms";
 
 const breadcrumbs: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
-  "/admin/pages": "Pages",
+  "/admin/pages": "Beranda",
+  "/admin/pages/list": "Pages",
   "/admin/media": "Media",
 };
 
@@ -23,7 +24,7 @@ export default function CMSTopbar({ onMenuClick }: { onMenuClick: () => void }) 
   }, []);
 
   const crumbs = Object.entries(breadcrumbs).filter(([key]) => pathname.startsWith(key));
-  const isDetail = pathname.startsWith("/admin/pages/") && pathname !== "/admin/pages";
+  const isDetail = pathname.startsWith("/admin/pages/") && pathname !== "/admin/pages" && !pathname.startsWith("/admin/pages/list");
 
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-60 z-30 h-16 bg-[#0F172A]/80 backdrop-blur-xl border-b border-white/5">

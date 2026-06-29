@@ -9,9 +9,7 @@ export default function NavbarRedirectPage() {
   useEffect(() => {
     // Redirect ke pages dengan scroll ke section navbar
     const timer = setTimeout(() => {
-      router.push("/admin/pages");
-      // Setelah redirect, kita bisa trigger scroll dengan URL anchor
-      window.location.hash = "navbar";
+      router.push("/admin/pages/list#navbar");
     }, 100);
     
     return () => clearTimeout(timer);

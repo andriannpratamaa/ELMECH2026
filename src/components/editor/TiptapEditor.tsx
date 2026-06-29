@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -11,15 +12,17 @@ import TextAlign from "@tiptap/extension-text-align";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Link from "@tiptap/extension-link";
-import ImageExt from "@tiptap/extension-image";
+import CustomImage from "./CustomImage";
 import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import Placeholder from "@tiptap/extension-placeholder";
 import YouTube from "@tiptap/extension-youtube";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import FontSize from "@tiptap/extension-font-size";
+import BubbleMenuExt from "@tiptap/extension-bubble-menu";
+import FloatingMenuExt from "@tiptap/extension-floating-menu";
 import { common, createLowlight } from "lowlight";
 import { getMedia, mediaUrl, uploadFile } from "@/services/cms";
 import type { Media } from "@/types/cms";
@@ -176,6 +179,20 @@ export default function TiptapEditor({
   const [media, setMedia] = useState<Media[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const bubbleMenuElRef = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const el = document.createElement("div");
+    el.className = "bubble-menu";
+    el.style.cssText = "display:none;position:absolute;z-index:9999";
+    return el;
+  }, []);
+  const floatingMenuElRef = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const el = document.createElement("div");
+    el.className = "floating-menu";
+    el.style.cssText = "display:none;position:absolute;z-index:9999";
+    return el;
+  }, []);
 
   const filteredMedia = useMemo(() => {
     if (!searchQuery) return media;
@@ -200,22 +217,33 @@ export default function TiptapEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
+        dropcursor: {
+          color: "#FBBF24",
+          width: 3,
+        },
+        link: false,
+        underline: false,
+        codeBlock: false,
       }),
       Underline,
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
       }),
-      ImageExt.configure({
+      CustomImage.configure({
         resize: {
           enabled: true,
-          directions: ["left", "right", "top", "bottom"],
+          directions: [
+            "top-left", "top", "top-right",
+            "left", "right",
+            "bottom-left", "bottom", "bottom-right",
+          ],
           minWidth: 50,
           minHeight: 50,
         },
@@ -224,7 +252,6 @@ export default function TiptapEditor({
       TableRow,
       TableCell,
       TableHeader,
-      HorizontalRule,
       Placeholder.configure({
         placeholder: placeholder || "Mulai menulis...",
       }),
@@ -235,13 +262,79 @@ export default function TiptapEditor({
         height: 480,
       }),
       CodeBlockLowlight.configure({ lowlight }),
+      FontSize.configure({
+        types: ["textStyle"],
+      }),
+      ...(bubbleMenuElRef
+        ? [
+            BubbleMenuExt.configure({
+              element: bubbleMenuElRef,
+              shouldShow: ({ editor }) => {
+                return editor.isActive("image") || !editor.state.selection.empty;
+              },
+            }),
+          ]
+        : []),
+      ...(floatingMenuElRef
+        ? [
+            FloatingMenuExt.configure({
+              element: floatingMenuElRef,
+              shouldShow: ({ editor }) => {
+                const { selection } = editor.state;
+                const { empty, $anchor } = selection;
+                if (!empty) return false;
+                const isNodeStart =
+                  $anchor.parent.type.name === "paragraph" &&
+                  $anchor.parent.content.size === 0;
+                return isNodeStart;
+              },
+            }),
+          ]
+        : []),
     ],
     content: value,
     editable: !disabled,
+    editorProps: {
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer?.files?.length) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith("image/")) {
+            event.preventDefault();
+            uploadImageFile(file);
+            return true;
+          }
+        }
+        return false;
+      },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (file) uploadImageFile(file);
+            return true;
+          }
+        }
+        return false;
+      },
+    },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
   });
+
+  const uploadImageFile = async (file: File) => {
+    try {
+      const result = await uploadFile(file);
+      const url = mediaUrl(result.url);
+      editor?.chain().focus().setImage({ src: url }).run();
+      toast.success("Gambar berhasil ditambahkan");
+    } catch {
+      toast.error("Gagal mengupload gambar");
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -259,6 +352,19 @@ export default function TiptapEditor({
     }
   }, [editor, value]);
 
+  useEffect(() => {
+    if (!editor || !bubbleMenuElRef || !floatingMenuElRef) return;
+    const container = editor.view.dom.parentElement;
+    if (container) {
+      container.appendChild(bubbleMenuElRef);
+      container.appendChild(floatingMenuElRef);
+    }
+    return () => {
+      bubbleMenuElRef.remove();
+      floatingMenuElRef.remove();
+    };
+  }, [editor, bubbleMenuElRef, floatingMenuElRef]);
+
   if (!mounted || !editor) {
     return (
       <div className="h-[400px] rounded-xl bg-white/5 border border-white/10 animate-pulse" />
@@ -269,17 +375,9 @@ export default function TiptapEditor({
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = async () => {
+    input.onchange = () => {
       const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const result = await uploadFile(file);
-        const url = mediaUrl(result.url);
-        editor.chain().focus().setImage({ src: url }).run();
-        toast.success("Gambar berhasil diupload");
-      } catch {
-        toast.error("Gagal mengupload gambar");
-      }
+      if (file) uploadImageFile(file);
     };
     input.click();
   };
@@ -840,12 +938,6 @@ export default function TiptapEditor({
             border-radius: 8px;
             margin: 12px 0;
           }
-          .tiptap-content .ProseMirror img.ProseMirror-resizable {
-            display: inline-block;
-          }
-          .tiptap-content .ProseMirror img.ProseMirror-resized {
-            cursor: default;
-          }
           .tiptap-content .ProseMirror hr {
             border: none;
             border-top: 2px solid rgba(255,255,255,0.1);
@@ -926,7 +1018,232 @@ export default function TiptapEditor({
           .tiptap-content .ProseMirror p {
             margin: 0.5em 0;
           }
+
+          /* Image resize container (created by ResizableNodeView.createContainer) */
+          .tiptap-content .ProseMirror [data-resize-container] {
+            line-height: 0;
+          }
+
+          /* Resize handles — hidden by default.
+             Handles are inside the wrapper (child of container),
+             positioned absolutely by ResizableNodeView.positionHandle(). */
+          .tiptap-content .ProseMirror [data-resize-handle] {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #FBBF24;
+            border: 2px solid #fff;
+            border-radius: 2px;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          }
+
+          /* Show handles when node has NodeSelection
+             ProseMirror adds .ProseMirror-selectednode to nodeView.dom (the container) */
+          .tiptap-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle],
+          .tiptap-content .ProseMirror [data-resize-container][data-resize-state="true"] [data-resize-handle] {
+            opacity: 1;
+          }
+
+          /* Handle cursor styles — positionHandle sets inline top/left/right/bottom
+             so we only control cursor here */
+          .tiptap-content .ProseMirror [data-resize-handle="top-left"] { cursor: nw-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="top"] { cursor: n-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="top-right"] { cursor: ne-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="left"] { cursor: w-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="right"] { cursor: e-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="bottom-left"] { cursor: sw-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="bottom"] { cursor: s-resize; }
+          .tiptap-content .ProseMirror [data-resize-handle="bottom-right"] { cursor: se-resize; }
+
+          /* Image selected state */
+          .tiptap-content .ProseMirror img.ProseMirror-selectednode {
+            outline: 3px solid #FBBF24;
+            outline-offset: 2px;
+            border-radius: 6px;
+          }
+
+          /* Draggable image container cursor */
+          .tiptap-content .ProseMirror [data-drag-image="true"] {
+            cursor: grab;
+          }
+          .tiptap-content .ProseMirror [data-drag-image="true"]:active {
+            cursor: grabbing;
+          }
+          .bubble-menu-content,
+          .floating-menu-content {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: #1E293B;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 4px 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          }
+          .bubble-menu-content button,
+          .floating-menu-content button {
+            padding: 5px 7px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+          }
+          .bubble-menu-content button:hover,
+          .floating-menu-content button:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+          }
+          .bubble-menu-content button.is-active,
+          .floating-menu-content button.is-active {
+            background: rgba(251,191,36,0.15);
+            color: #FBBF24;
+          }
+          .bubble-separator {
+            width: 1px;
+            height: 18px;
+            background: rgba(255,255,255,0.1);
+            margin: 0 4px;
+            flex-shrink: 0;
+          }
         `}</style>
+
+        {editor && bubbleMenuElRef && createPortal(
+          <div>
+            {editor.isActive("image") ? (
+              <div className="bubble-menu-content">
+                <button
+                  onClick={() => editor.chain().focus().deleteSelection().run()}
+                  title="Hapus Gambar"
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="bubble-separator" />
+                <button
+                  onClick={() => editor.chain().focus().updateAttributes("image", { align: "left" }).run()}
+                  className={editor.getAttributes("image").align === "left" ? "is-active" : ""}
+                  title="Rata Kiri"
+                >
+                  <AlignLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().updateAttributes("image", { align: "center" }).run()}
+                  className={editor.getAttributes("image").align === "center" ? "is-active" : ""}
+                  title="Rata Tengah"
+                >
+                  <AlignCenter className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().updateAttributes("image", { align: "right" }).run()}
+                  className={editor.getAttributes("image").align === "right" ? "is-active" : ""}
+                  title="Rata Kanan"
+                >
+                  <AlignRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="bubble-menu-content">
+                <button
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  className={editor.isActive("bold") ? "is-active" : ""}
+                  title="Bold"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  className={editor.isActive("italic") ? "is-active" : ""}
+                  title="Italic"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleUnderline().run()}
+                  className={editor.isActive("underline") ? "is-active" : ""}
+                  title="Underline"
+                >
+                  <UnderlineIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                  className={editor.isActive("strike") ? "is-active" : ""}
+                  title="Strikethrough"
+                >
+                  <Strikethrough className="w-3.5 h-3.5" />
+                </button>
+                <div className="bubble-separator" />
+                <button
+                  onClick={toggleLink}
+                  className={editor.isActive("link") ? "is-active" : ""}
+                  title="Link"
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleCode().run()}
+                  className={editor.isActive("code") ? "is-active" : ""}
+                  title="Code"
+                >
+                  <Code className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>,
+          bubbleMenuElRef
+        )}
+
+        {editor && floatingMenuElRef && createPortal(
+          <div className="floating-menu-content">
+            <button
+              onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
+              title="Heading 1"
+            >
+              H1
+            </button>
+            <button
+              onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()}
+              title="Heading 2"
+            >
+              H2
+            </button>
+            <button
+              onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()}
+              title="Heading 3"
+            >
+              H3
+            </button>
+            <div className="bubble-separator" />
+            <button
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              title="Bullet List"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              title="Ordered List"
+            >
+              <ListOrdered className="w-3.5 h-3.5" />
+            </button>
+            <div className="bubble-separator" />
+            <button
+              onClick={() => editor.chain().focus().setHorizontalRule().run()}
+              title="Horizontal Line"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+          </div>,
+          floatingMenuElRef
+        )}
+
         <EditorContent editor={editor} />
       </div>
 
