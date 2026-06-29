@@ -564,6 +564,81 @@ router.put("/:slug", verifyToken, async (req, res, next) => {
   }
 });
 
+// PATCH /api/pages/:slug/slug - Update slug halaman
+router.patch("/:slug/slug", verifyToken, async (req, res, next) => {
+  try {
+    const rawSlug = req.params.slug;
+    const slug = rawSlug === "beranda" ? ROOT_PAGE_SLUG : rawSlug;
+
+    // Cegah rename slug beranda
+    if (slug === ROOT_PAGE_SLUG) {
+      return res.status(400).json({
+        success: false,
+        message: "Slug halaman beranda tidak dapat diubah",
+        code: "CANNOT_CHANGE_ROOT_SLUG",
+      });
+    }
+
+    const { new_slug } = req.body;
+    const normalizedSlug = new_slug === "beranda" ? ROOT_PAGE_SLUG : new_slug;
+
+    if (!normalizedSlug || normalizedSlug === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Slug baru wajib diisi",
+        code: "VALIDATION_ERROR",
+      });
+    }
+
+    if (!isValidSlug(normalizedSlug)) {
+      return res.status(400).json({
+        success: false,
+        message: "Slug hanya boleh mengandung huruf kecil, angka, dan tanda hubung",
+        code: "INVALID_SLUG_FORMAT",
+      });
+    }
+
+    // Cek apakah halaman lama ada
+    const [existing] = await pool.query("SELECT id FROM pages WHERE slug = ?", [slug]);
+    if (existing.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Halaman tidak ditemukan",
+        code: "PAGE_NOT_FOUND",
+      });
+    }
+
+    // Cek apakah slug baru sudah dipakai
+    const [duplicate] = await pool.query("SELECT id FROM pages WHERE slug = ? AND id != ?", [
+      normalizedSlug,
+      existing[0].id,
+    ]);
+    if (duplicate.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Slug sudah digunakan oleh halaman lain",
+        code: "SLUG_ALREADY_EXISTS",
+      });
+    }
+
+    await pool.query("UPDATE pages SET slug = ?, updated_at = NOW() WHERE id = ?", [
+      normalizedSlug,
+      existing[0].id,
+    ]);
+
+    console.log(`[PAGES] Slug halaman diubah: "${slug}" → "${normalizedSlug}"`);
+
+    res.json({
+      success: true,
+      message: "Slug berhasil diperbarui",
+      data: { slug: normalizedSlug },
+    });
+  } catch (err) {
+    console.error("[PAGES] Error saat mengubah slug:", err);
+    next(err);
+  }
+});
+
 // DELETE /api/pages/:slug - Hapus halaman
 router.delete("/:slug", verifyToken, async (req, res, next) => {
   try {

@@ -15,6 +15,10 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronDown as ChevronDownIcon,
+  Copy,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +32,9 @@ import {
   reorderNavbarItems,
   updateNavbarItem,
   getAvailablePagesForNavbar,
+  updatePageSlug,
+  getPageBySlug,
+  createPage,
 } from "@/services/cms";
 import type { Page } from "@/types/cms";
 import type { NavbarItem, AvailablePage } from "@/services/cms";
@@ -53,6 +60,17 @@ export default function PagesListPage() {
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+
+  // Slug edit modal
+  const [slugEditPage, setSlugEditPage] = useState<Page | null>(null);
+  const [slugEditValue, setSlugEditValue] = useState("");
+  const [slugEditSaving, setSlugEditSaving] = useState(false);
+
+  // Copy page modal
+  const [copyPage, setCopyPage] = useState<Page | null>(null);
+  const [copySlugValue, setCopySlugValue] = useState("");
+  const [copyTitleValue, setCopyTitleValue] = useState("");
+  const [copySaving, setCopySaving] = useState(false);
 
   // Load data halaman
   const loadPages = async () => {
@@ -154,6 +172,67 @@ export default function PagesListPage() {
       toast.error("Gagal menghapus halaman");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Copy halaman
+  const handleCopyPage = (page: Page) => {
+    setCopyPage(page);
+    setCopyTitleValue(`Salinan - ${page.title}`);
+    setCopySlugValue(`salinan-${page.slug || "beranda"}`);
+  };
+
+  const handleCopyConfirm = async () => {
+    if (!copyPage || !copySlugValue.trim()) {
+      toast.error("Slug harus diisi");
+      return;
+    }
+    try {
+      setCopySaving(true);
+      const fullPage = await getPageBySlug(copyPage.slug);
+      if (!fullPage) {
+        toast.error("Gagal mengambil data halaman");
+        return;
+      }
+      await createPage({
+        slug: copySlugValue.trim(),
+        title: copyTitleValue.trim(),
+        content: fullPage.content,
+        published: false,
+      });
+      toast.success("Halaman berhasil disalin");
+      setCopyPage(null);
+      await loadPages();
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Gagal menyalin halaman";
+      toast.error(msg);
+    } finally {
+      setCopySaving(false);
+    }
+  };
+
+  // Edit slug
+  const handleEditSlug = (page: Page) => {
+    setSlugEditPage(page);
+    setSlugEditValue(page.slug);
+  };
+
+  const handleSlugSave = async () => {
+    if (!slugEditPage || !slugEditValue.trim()) {
+      toast.error("Slug harus diisi");
+      return;
+    }
+    try {
+      setSlugEditSaving(true);
+      await updatePageSlug(slugEditPage.slug, slugEditValue.trim());
+      toast.success("Slug berhasil diubah");
+      setSlugEditPage(null);
+      await loadPages();
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Gagal mengubah slug";
+      toast.error(msg);
+    } finally {
+      setSlugEditSaving(false);
     }
   };
 
@@ -482,6 +561,25 @@ export default function PagesListPage() {
                             <FileText className="w-4 h-4" />
                           </button>
 
+                          {page.slug !== "" && (
+                            <>
+                              <button
+                                onClick={() => handleCopyPage(page)}
+                                title="Salin halaman"
+                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEditSlug(page)}
+                                title="Ubah slug"
+                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-[#FBBF24] transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+
                           <a
                             href={page.slug === "" ? "/" : `/${page.slug}`}
                             target="_blank"
@@ -799,6 +897,111 @@ export default function PagesListPage() {
             Drag & drop untuk mengubah urutan menu | Klik + untuk tambah
             submenu
           </p>
+        </div>
+      )}
+
+      {/* Slug Edit Modal */}
+      {slugEditPage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setSlugEditPage(null)}
+        >
+          <div
+            className="w-full max-w-md mx-4 bg-slate-800 rounded-2xl border border-white/10 shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">
+              Ubah Slug
+            </h3>
+            <p className="text-sm text-white/50 mb-4">
+              <span className="text-white/80">{slugEditPage.title}</span>
+            </p>
+
+            <label className="block text-sm text-white/60 mb-1.5">Slug baru</label>
+            <input
+              type="text"
+              value={slugEditValue}
+              onChange={(e) =>
+                setSlugEditValue(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+              }
+              placeholder="contoh: halaman-baru"
+              className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 transition-colors mb-4"
+              autoFocus
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setSlugEditPage(null)}
+                className="px-4 py-2 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-colors text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSlugSave}
+                disabled={slugEditSaving || !slugEditValue.trim()}
+                className="px-4 py-2 rounded-xl bg-[#FBBF24]/10 text-[#FBBF24] hover:bg-[#FBBF24]/20 border border-[#FBBF24]/20 transition-colors text-sm font-medium disabled:opacity-40"
+              >
+                {slugEditSaving ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Page Modal */}
+      {copyPage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setCopyPage(null)}
+        >
+          <div
+            className="w-full max-w-md mx-4 bg-slate-800 rounded-2xl border border-white/10 shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-white mb-1">
+              Salin Halaman
+            </h3>
+            <p className="text-sm text-white/50 mb-4">
+              Buat salinan dari <span className="text-white/80">{copyPage.title}</span>
+            </p>
+
+            <label className="block text-sm text-white/60 mb-1.5">Judul</label>
+            <input
+              type="text"
+              value={copyTitleValue}
+              onChange={(e) => setCopyTitleValue(e.target.value)}
+              placeholder="Judul halaman baru"
+              className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 transition-colors mb-4"
+            />
+
+            <label className="block text-sm text-white/60 mb-1.5">Slug</label>
+            <input
+              type="text"
+              value={copySlugValue}
+              onChange={(e) =>
+                setCopySlugValue(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+              }
+              placeholder="contoh: halaman-baru"
+              className="w-full px-4 py-2.5 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-blue-500/50 transition-colors mb-4"
+              autoFocus
+            />
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setCopyPage(null)}
+                className="px-4 py-2 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-colors text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCopyConfirm}
+                disabled={copySaving || !copySlugValue.trim() || !copyTitleValue.trim()}
+                className="px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors text-sm font-medium disabled:opacity-40"
+              >
+                {copySaving ? "Menyalin..." : "Salin Halaman"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

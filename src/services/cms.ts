@@ -250,6 +250,23 @@ export async function unpublishPage(slug: string): Promise<void> {
 }
 
 /**
+ * Update slug halaman
+ */
+export async function updatePageSlug(
+  slug: string,
+  newSlug: string,
+): Promise<void> {
+  try {
+    await api.patch(`/pages/${encodeURIComponent(slug)}/slug`, {
+      new_slug: newSlug,
+    });
+  } catch (error) {
+    console.error(`[CMS] Error mengubah slug "${slug}" ke "${newSlug}":`, error);
+    throw error;
+  }
+}
+
+/**
  * Upload file
  */
 export async function uploadFile(file: File): Promise<Media> {
