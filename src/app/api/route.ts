@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const { slug } = await request.json();
 
-    if (!slug) {
+    if (slug === undefined || slug === null) {
       return NextResponse.json(
         { success: false, message: "Slug is required" },
         { status: 400 }

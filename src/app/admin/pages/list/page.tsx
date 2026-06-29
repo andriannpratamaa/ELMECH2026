@@ -313,7 +313,7 @@ export default function PagesListPage() {
   };
 
   const handleEditPage = (page: Page) => {
-    if (page.slug === "") {
+    if (page.slug === "" || page.slug === "root") {
       router.push("/admin/pages");
     } else {
       router.push(`/admin/pages/${page.slug}`);
@@ -483,7 +483,7 @@ export default function PagesListPage() {
                           </button>
 
                           <a
-                            href={`/${page.slug}`}
+                            href={page.slug === "root" ? "/" : `/${page.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Lihat"

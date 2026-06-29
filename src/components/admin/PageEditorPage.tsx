@@ -462,7 +462,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
     setSaving(true);
     try {
       await updatePage(slug, { title, content: blocks });
-      await revalidatePageCache(slug);
+      await revalidatePageCache(slug === "root" ? "" : slug);
       toast.success("Halaman berhasil disimpan");
     } catch {
       toast.error("Gagal menyimpan halaman");
