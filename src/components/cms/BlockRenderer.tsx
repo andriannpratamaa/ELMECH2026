@@ -161,6 +161,19 @@ function PageHeroBlock({ data }: { data: Record<string, any> }) {
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-[family-name:var(--font-display)] mb-4">{data.title}</h1>
         {data.subtitle && <p className="text-lg sm:text-xl text-blue-100/70 max-w-2xl mx-auto">{data.subtitle}</p>}
       </div>
+      <div className="absolute bottom-0 left-0 w-full z-10 leading-none">
+        <svg viewBox="0 0 1440 100" fill="none" className="w-full h-auto">
+          <path
+            d="M0 40C240 80 480 20 720 50C960 80 1200 30 1440 60V100H0V40Z"
+            fill="#F8FAFC"
+            opacity="0.97"
+          />
+          <path
+            d="M0 70C240 90 480 60 720 80C960 100 1200 70 1440 85V100H0V70Z"
+            fill="#F8FAFC"
+          />
+        </svg>
+      </div>
     </section>
   );
 }

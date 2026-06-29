@@ -33,7 +33,6 @@ import {
   updateNavbarItem,
   getAvailablePagesForNavbar,
   updatePageSlug,
-  getPageBySlug,
   createPage,
 } from "@/services/cms";
 import type { Page } from "@/types/cms";
@@ -189,15 +188,10 @@ export default function PagesListPage() {
     }
     try {
       setCopySaving(true);
-      const fullPage = await getPageBySlug(copyPage.slug);
-      if (!fullPage) {
-        toast.error("Gagal mengambil data halaman");
-        return;
-      }
       await createPage({
         slug: copySlugValue.trim(),
         title: copyTitleValue.trim(),
-        content: fullPage.content,
+        content: [],
         published: false,
       });
       toast.success("Halaman berhasil disalin");
