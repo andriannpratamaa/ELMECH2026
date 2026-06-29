@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Star, ExternalLink } from "lucide-react";
 import type { ContentBlock } from "@/types/cms";
 import Hero from "@/components/Hero";
+import About from "@/components/About";
 import BerandaProgram from "@/components/BerandaProgram";
 import BerandaNews from "@/components/BerandaNews";
 import BerandaGallery from "@/components/BerandaGallery";
@@ -175,8 +176,22 @@ export default function BlockRenderer({ blocks }: { blocks: ContentBlock[] }) {
             return <TextBlock key={i} data={block.data} />;
           case "features":
             return <FeaturesBlock key={i} data={block.data} />;
+          case "statistics":
+            return <About key={i} statistics={block.data?.cards} />;
           case "gallery":
             return <GalleryBlock key={i} data={block.data} />;
+          case "program":
+            return (
+              <BerandaProgram
+                key={i}
+                programs={block.data?.programs}
+                bentoItems={block.data?.bento_items || block.data?.bentoItems}
+                facilities={block.data?.facilities}
+                kerjasama={block.data?.kerjasama}
+              />
+            );
+          case "news":
+            return <BerandaNews key={i} items={block.data?.items} trending={block.data?.featured} />;
           case "cta":
             return <CTASection key={i} {...normalizeCTA(block.data)} />;
           case "contact":

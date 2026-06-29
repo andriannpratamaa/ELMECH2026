@@ -144,30 +144,20 @@ export async function getPages(): Promise<Page[]> {
 /**
  * Ambil halaman berdasarkan slug
  */
-function normalizeSlugForApi(slug: string) {
-  if (slug === "" || slug === "/" || slug === "root") {
-    return "root";
-  }
-  return slug;
-}
-
 function getPagePath(slug: string) {
-  const normalized = normalizeSlugForApi(slug);
-  return normalized === "root" ? "/pages/root" : `/pages/${normalized}`;
+  return slug === "" ? "/pages/root" : `/pages/${slug}`;
 }
 
 function getPagePublishPath(slug: string) {
-  const normalized = normalizeSlugForApi(slug);
-  return normalized === "root"
+  return slug === ""
     ? "/pages/root/publish"
-    : `/pages/${normalized}/publish`;
+    : `/pages/${slug}/publish`;
 }
 
 function getPageUnpublishPath(slug: string) {
-  const normalized = normalizeSlugForApi(slug);
-  return normalized === "root"
+  return slug === ""
     ? "/pages/root/unpublish"
-    : `/pages/${normalized}/unpublish`;
+    : `/pages/${slug}/unpublish`;
 }
 
 export async function getPageBySlug(slug: string): Promise<Page | null> {

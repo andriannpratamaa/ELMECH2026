@@ -3,5 +3,5 @@
 import PageEditorPage from "@/components/admin/PageEditorPage";
 
 export default function BerandaEditorPage() {
-  return <PageEditorPage slug="root" backHref="/admin/pages/list" />;
+  return <PageEditorPage slug="" backHref="/admin/pages/list" />;
 }

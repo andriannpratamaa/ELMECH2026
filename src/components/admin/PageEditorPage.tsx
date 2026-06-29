@@ -433,7 +433,7 @@ function BlockEditor({
 
 export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: string; backHref?: string }) {
   const router = useRouter();
-  const slug = slugProp || "root";
+  const slug = slugProp ?? "";
 
   const [page, setPage] = useState<Page | null>(null);
   const [title, setTitle] = useState("");
@@ -443,7 +443,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const apiSlug = slug === "root" ? "" : slug;
+  const apiSlug = slug;
 
   useEffect(() => {
     getPageBySlug(apiSlug)
@@ -462,7 +462,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
     setSaving(true);
     try {
       await updatePage(slug, { title, content: blocks });
-      await revalidatePageCache(slug === "root" ? "" : slug);
+      await revalidatePageCache(slug);
       toast.success("Halaman berhasil disimpan");
     } catch {
       toast.error("Gagal menyimpan halaman");
@@ -520,7 +520,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
                 Pratinjau Halaman
               </h1>
               <p className="text-sm text-white/40 mt-1">
-                {slug === "root" ? "/" : `/${slug}`}
+                {slug === "" ? "/" : `/${slug}`}
               </p>
             </div>
           </div>
@@ -558,7 +558,7 @@ export default function PageEditorPage({ slug: slugProp, backHref }: { slug?: st
               Edit Halaman
             </h1>
             <p className="text-sm text-white/40 mt-1">
-              {slug === "root" ? "/" : `/${slug}`}
+              {slug === "" ? "/" : `/${slug}`}
             </p>
           </div>
         </div>

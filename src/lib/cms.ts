@@ -8,9 +8,7 @@ const API_BASE = normalizedBase.endsWith("/api")
   : `${normalizedBase}/api`;
 
 export function normalizeCmsSlug(slug: string): string {
-  if (slug === "" || slug === "/" || slug === "root" || slug === "beranda") {
-    return "root";
-  }
+  if (slug === "" || slug === "/") return "";
   return slug;
 }
 
@@ -32,11 +30,13 @@ export function buildCmsSections(page: Page | null) {
 
 export async function fetchCmsPage(slug: string): Promise<Page | null> {
   const normalizedSlug = normalizeCmsSlug(slug);
-  const apiUrl = `${API_BASE}/pages/${encodeURIComponent(normalizedSlug)}`;
+  const apiUrl = normalizedSlug === ""
+    ? `${API_BASE}/pages/root`
+    : `${API_BASE}/pages/${encodeURIComponent(normalizedSlug)}`;
 
   try {
     const res = await fetch(apiUrl, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
