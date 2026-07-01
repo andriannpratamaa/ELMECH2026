@@ -171,14 +171,6 @@ export default function InspectionApprovalDashboard() {
         ...item,
         approval_status: item.approval_status || status,
       }));
-      if (list.length > 0) {
-        console.log("ITEM (forced approval_status):", list[0]);
-        console.log("APPROVAL STATUS:", list[0]?.approval_status);
-      }
-      if (list.length === 0) {
-        setter([]);
-        return;
-      }
       const details = await fetchDetailsForList(list);
       const seen = new Set<number>();
       setter(details.filter((d) => {
@@ -711,7 +703,7 @@ export default function InspectionApprovalDashboard() {
                                 const isB = ic === "B";
                                 return (
                                 <div key={item.id} className="px-4 py-2.5 flex items-center justify-between">
-                                  {void console.log("SUBITEM", { item, ic })}
+                                  {void { item, ic }}
                                   <div className="flex items-center gap-2 min-w-0">
                                     {isB ? (
                                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

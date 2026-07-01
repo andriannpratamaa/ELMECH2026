@@ -19,18 +19,14 @@ function mapMonthlyItem(r: any): InspectionItem {
 
 function flattenItems(monthly_results: any): InspectionItem[] {
   if (!monthly_results) return [];
-  console.log("[flattenItems] monthly_results type:", typeof monthly_results, Array.isArray(monthly_results) ? "array[" + monthly_results.length + "]" : "object");
   if (Array.isArray(monthly_results)) {
     const items: InspectionItem[] = [];
     for (const month of monthly_results) {
-      console.log("[flattenItems] month keys:", Object.keys(month));
       const cats = month.categories || month.category || month.data || [];
       for (const cat of cats) {
-        console.log("[flattenItems] cat keys:", Object.keys(cat));
         const catName = cat.nama_kategori || cat.category_name || cat.nama || "Lainnya";
         const subItems = cat.items || cat.sub_items || cat.results || cat.subitems || cat.data || [];
         for (const r of subItems) {
-          console.log("[flattenItems] subitem keys:", Object.keys(r), "values:", JSON.stringify(r));
           items.push({ ...mapMonthlyItem(r), category_name: catName });
         }
       }
@@ -58,7 +54,6 @@ export async function getPendingReviews(): Promise<Inspection[]> {
 }
 
 export async function getInspectionDetail(id: number): Promise<InspectionDetail | null> {
-  console.log('[getInspectionDetail] fetching id:', id);
   try {
     const res = await api.get<ApiResponse<{ inspection: Record<string, any>; monthly_results: any }>>(`/inspections/detail/${id}`);
     const raw = res.data.data;
@@ -67,8 +62,6 @@ export async function getInspectionDetail(id: number): Promise<InspectionDetail 
       return null;
     }
     const { inspection, monthly_results } = raw;
-    console.log('[getInspectionDetail] DETAIL RESPONSE:', raw);
-    console.log('[getInspectionDetail] MONTHLY RESULTS:', monthly_results);
     const result: InspectionDetail = {
       id: inspection.id,
       inspection_id: inspection.inspection_id ?? inspection.id,
@@ -157,12 +150,10 @@ export async function rejectResult(resultId: number, alasan_penolakan?: string):
 
 export async function bulkApproveResults(data: { ids: number[] }): Promise<void> {
   const res = await api.put('/inspections/results/bulk-approve', data);
-  console.log('[bulkApproveResults] response:', res.data);
 }
 
 export async function bulkRejectResults(data: { ids: number[]; alasan_penolakan: string }): Promise<void> {
   const res = await api.put('/inspections/results/bulk-reject', data);
-  console.log('[bulkRejectResults] response:', res.data);
 }
 
 export async function approveMonth(id: number, bulan: number): Promise<void> {

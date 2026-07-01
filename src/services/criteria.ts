@@ -41,7 +41,6 @@ export async function createSubItem(data: { name: string; category_id: number })
 
 export async function getPendingCategories(): Promise<CriteriaCategory[]> {
   const res = await api.get<ApiResponse<CriteriaCategory[]>>('/criteria/category/pending');
-  console.log("GET /api/criteria/category/pending response:", res.data.data);
   return res.data.data || [];
 }
 
@@ -52,7 +51,6 @@ export async function getPendingSubItems(): Promise<CriteriaSubItem[]> {
 
 export async function getApprovedCriteria(): Promise<CriteriaCategory[]> {
   const res = await api.get<ApiResponse<CriteriaCategory[]>>('/criteria/approved');
-  console.log("GET /api/criteria/approved response:", res.data.data);
   return res.data.data || [];
 }
 
