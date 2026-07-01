@@ -10,7 +10,7 @@ import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { getLabs, createLab, updateLab, deleteLab } from "@/services/labs";
 import { getUsers } from "@/services/users";
 import { getPendingCategories, getPendingSubItems } from "@/services/criteria";
-import { getPendingReviews,getInspectionByItemId } from "@/services/inspections";
+import { getPendingReviews, getInspectionByItemId } from "@/services/inspections";
 import type { Lab, User as UserType } from "@/types/admin";
 import { useAdminNotification } from "@/contexts/AdminNotificationContext";
 
@@ -20,6 +20,7 @@ export default function LabsPage() {
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [kalabUsers, setKalabUsers] = useState<UserType[]>([]);
   const [plpUsers, setPlpUsers] = useState<UserType[]>([]);
+  const [teknisiUsers, setTeknisiUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -27,7 +28,7 @@ export default function LabsPage() {
   const [editLab, setEditLab] = useState<Lab | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", plp1_id: "", plp2_id: "" });
+  const [form, setForm] = useState({ nama_lab: "", lokasi: "", kalab_id: "", plp_id: "", teknisi_id: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [highlightCancel, setHighlightCancel] = useState(false);
@@ -54,6 +55,7 @@ export default function LabsPage() {
       setAllUsers(userData);
       setKalabUsers(userData.filter((u) => u.role === "kalab"));
       setPlpUsers(userData.filter((u) => u.role === "plp"));
+      setTeknisiUsers(userData.filter((u) => u.role === "teknisi"));
 
       const counts: Record<number, number> = {};
       for (const cat of pendingCats) {
@@ -74,7 +76,7 @@ export default function LabsPage() {
 
   const openCreate = () => {
     setEditLab(null);
-    setForm({ nama_lab: "", lokasi: "", kalab_id: "", plp1_id: "", plp2_id: "" });
+    setForm({ nama_lab: "", lokasi: "", kalab_id: "", plp_id: "", teknisi_id: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -85,9 +87,8 @@ export default function LabsPage() {
       nama_lab: l.nama_lab,
       lokasi: l.lokasi || "",
       kalab_id: l.kalab_id?.toString() || "",
-      
-      plp1_id: l.plp1_id?.toString() || "",
-      plp2_id: l.plp2_id?.toString() || "",
+      teknisi_id: l.teknisi_id?.toString() || "",
+      plp_id: l.plp_id?.toString() || "",
     });
     setErrors({});
     setShowForm(true);
@@ -111,8 +112,8 @@ export default function LabsPage() {
       nama_lab: form.nama_lab.trim(),
       lokasi: form.lokasi.trim(),
       kalab_id: form.kalab_id ? Number(form.kalab_id) : undefined,
-      plp1_id: form.plp1_id ? Number(form.plp1_id) : undefined,
-      plp2_id: form.plp2_id ? Number(form.plp2_id) : undefined,
+      plp_id: form.plp_id ? Number(form.plp_id) : undefined,
+      teknisi_id: form.teknisi_id ? Number(form.teknisi_id) : undefined,
     };
     try {
       if (editLab) {
@@ -260,7 +261,7 @@ export default function LabsPage() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => {setHighlightCancel(true);setTimeout(() => {setHighlightCancel(false);}, 700);}}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-4 bg-black/60 backdrop-blur-sm overflow-y-auto modal-scroll" onClick={() => { setHighlightCancel(true); setTimeout(() => { setHighlightCancel(false); }, 700); }}>
           <div className="w-full max-w-lg rounded-2xl bg-[#1E293B] border border-white/10 p-6 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">{editLab ? "Edit Lab" : "Tambah Lab"}</h2>
             <div className="space-y-3">
@@ -287,50 +288,53 @@ export default function LabsPage() {
                   showSearch={kalabUsers.length > 5}
                   searchPlaceholder="Cari kalab..."
                 />
+                <div>
+                  <label className="block text-xs font-medium text-white/60 mb-1">
+                    Teknisi
+                  </label>
+
+                  <CustomSelect
+                    value={form.teknisi_id}
+                    onChange={(v) => setForm({ ...form, teknisi_id: v })}
+                    options={[
+                      { value: "", label: "Pilih Teknisi" },
+                      ...teknisiUsers.map((u) => ({
+                        value: String(u.id),
+                        label: u.name,
+                      })),
+                    ]}
+                    placeholder="Pilih Teknisi"
+                    showSearch={teknisiUsers.length > 5}
+                    searchPlaceholder="Cari Teknisi..."
+                  />
+
+                </div>
               </div>
+
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">
-                  PLP 1
+                  PLP
                 </label>
 
                 <CustomSelect
-                  value={form.plp1_id}
-                  onChange={(v) => setForm({ ...form, plp1_id: v })}
+                  value={form.plp_id}
+                  onChange={(v) => setForm({ ...form, plp_id: v })}
                   options={[
-                    { value: "", label: "Pilih PLP 1" },
+                    { value: "", label: "Pilih PLP" },
                     ...plpUsers.map((u) => ({
                       value: String(u.id),
                       label: u.name,
                     })),
                   ]}
-                  placeholder="Pilih PLP 1"
+                  placeholder="Pilih PLP"
                   showSearch={plpUsers.length > 5}
                   searchPlaceholder="Cari PLP..."
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">
-                  PLP 2
-                </label>
 
-                <CustomSelect
-                  value={form.plp2_id}
-                  onChange={(v) => setForm({ ...form, plp2_id: v })}
-                  options={[
-                    { value: "", label: "Pilih PLP 2" },
-                    ...plpUsers.map((u) => ({
-                      value: String(u.id),
-                      label: u.name,
-                    })),
-                  ]}
-                  placeholder="Pilih PLP 2"
-                  showSearch={plpUsers.length > 5}
-                  searchPlaceholder="Cari PLP..."
-                />
-              </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30": "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
+              <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel ? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30" : "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
               <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-sm font-medium bg-[#FBBF24] text-[#0F172A] hover:bg-[#FCD34D] transition-all disabled:opacity-50">
                 {saving ? "Menyimpan..." : "Simpan"}
               </button>

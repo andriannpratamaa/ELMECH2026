@@ -36,7 +36,11 @@ export function KalabNotificationProvider({
 
     try {
       const user = getUser();
-
+      
+    if (!user || user.role !== "kalab") {
+      setPendingLabCount(0);
+      return;
+    }
       const [labsData, myCriteria, myReviews] = await Promise.all([
         getLabs(),
         getMyCriteria(),

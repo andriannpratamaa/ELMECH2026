@@ -27,13 +27,23 @@ export default function AdminLoginPage() {
 
     const result = await login({ email, password });
 
+    console.log(result);
+console.log(result.user);
+console.log(result.user?.role);
     if (result.success && result.token) {
       setSuccess(true);
       const role = result.user?.role;
+      console.log("ROLE:", role);
       if (role === "admin") {
         setTimeout(() => router.push("/admin/dashboard"), 1500);
-      } else if (role === "kalab" ) {
+      } else if (role === "kalab") {
         setTimeout(() => router.push("/kalab/dashboard"), 1500);
+      } else if (role === "plp") {
+        console.log("SEBELUM PUSH");
+        router.push("/plp/dashboard");
+        console.log("SESUDAH PUSH");
+      } else if (role === "teknisi") {
+        setTimeout(() => router.push("/teknisi/dashboard"), 1500);
       } else {
         setError("Role tidak dikenali");
         setLoading(false);

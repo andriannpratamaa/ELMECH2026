@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import KalabSidebar from "@/components/admin/KalabSidebar";
 import KalabTopbar from "@/components/admin/KalabTopbar";
 import { KalabNotificationProvider } from "@/contexts/KalabNotificationContext";
+import RoleGuard from "@/components/auth/RoleGuard";
 
 function KalabWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -44,8 +45,8 @@ export default function KalabRootLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
 return (
-  <KalabWrapper>
-    <KalabNotificationProvider>
+  <RoleGuard roles={["kalab"]}>
+        <KalabNotificationProvider>
       <div className="min-h-screen bg-[#0F172A] text-white">
         <KalabSidebar
           open={sidebarOpen}
@@ -61,6 +62,6 @@ return (
         </main>
       </div>
     </KalabNotificationProvider>
-  </KalabWrapper>
+  </RoleGuard>
 );
 }

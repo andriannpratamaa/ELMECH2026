@@ -9,7 +9,7 @@ export interface User {
   name: string;
   email: string;
   nip?: string;
-  role: "admin" | "kalab" | "plp";
+  role: "admin" | "kalab" | "plp" | "teknisi";
   password?: string;
   laboratory_id?: number | null;
   lab_name?: string;
@@ -24,11 +24,11 @@ export interface Lab {
   kalab_id?: number | null;
   kalab_name?: string;
 
-  plp1_id?: number | null;
-  plp2_id?: number | null;
+  plp_id?: number | null;
+  teknisi_id?: number | null;
 
-  plp1_name?: string;
-  plp2_name?: string;
+  plp_name?: string;
+  teknisi_name?: string;
 
   items_count?: number;
   item_ids?: string;
@@ -43,6 +43,8 @@ export interface Item {
   kode_barang?: string;
   pembuat_alat?: string;
   tanggal_pembelian?: string;
+  tanggal_kalibrasi_terakhir?: string;
+  tanggal_kalibrasi_berikutnya?: string;
   categories?: CriteriaCategory[];
   inspection_count?: number;
   category_count?: number;
@@ -163,7 +165,7 @@ export interface Profile {
   name: string;
   email: string;
   nip?: string;
-  role: "admin" | "kalab";
+  role: "admin" | "kalab" | "plp" | "teknisi";
   laboratory_id?: number | null;
   lab_name?: string;
 }

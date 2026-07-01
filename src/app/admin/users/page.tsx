@@ -74,7 +74,7 @@ export default function UsersPage() {
       name: form.name,
       email: form.email,
       nip: form.nip,
-      role: form.role as "admin" | "kalab" | "plp",
+      role: form.role as "admin" | "kalab" | "plp" | "teknisi",
       laboratory_id: form.laboratory_id ? Number(form.laboratory_id) : null,
     };
     if (form.password) payload.password = form.password;
@@ -171,6 +171,7 @@ export default function UsersPage() {
                     { value: "admin", label: "Admin" },
                     { value: "kalab", label: "Kalab" },
                     { value: "plp", label: "PLP" },
+                    { value: "teknisi", label: "Teknisi" },
                   ]}
                   placeholder="Pilih Role"
                   showSearch={false}

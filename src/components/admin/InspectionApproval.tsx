@@ -500,7 +500,6 @@ export default function InspectionApprovalDashboard() {
                         </div>
                       </div>
                       {(() => {
-                        console.log("BADGE STATUS", d.approval_status);
                         const as = d.approval_status?.toUpperCase() || "PENDING";
                         const isPending = as === "PENDING";
                         const isApproved = as === "APPROVED";

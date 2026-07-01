@@ -41,6 +41,8 @@ export default function LabDetailPage() {
     kode_barang: "",
     pembuat_alat: "",
     tanggal_pembelian: "",
+    tanggal_kalibrasi_terakhir: "",
+    tanggal_kalibrasi_berikutnya: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,7 +135,7 @@ export default function LabDetailPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ nama_barang: "", kode_barang: "", pembuat_alat: "", tanggal_pembelian: "" });
+    setForm({ nama_barang: "", kode_barang: "", pembuat_alat: "", tanggal_pembelian: "", tanggal_kalibrasi_terakhir: "", tanggal_kalibrasi_berikutnya: "" });
     setErrors({});
     setShowForm(true);
   };
@@ -143,8 +145,15 @@ export default function LabDetailPage() {
     setForm({
       nama_barang: item.nama_barang,
       kode_barang: item.kode_barang || "",
-      pembuat_alat: item.pembuat_alat || "",
-      tanggal_pembelian: item.tanggal_pembelian || "",
+      pembuat_alat: item.pembuat_alat || "",      
+      tanggal_pembelian:
+        item.tanggal_pembelian?.slice(0, 10) || "",
+
+      tanggal_kalibrasi_terakhir:
+        item.tanggal_kalibrasi_terakhir?.slice(0, 10) || "",
+
+      tanggal_kalibrasi_berikutnya:
+        item.tanggal_kalibrasi_berikutnya?.slice(0, 10) || "",
     });
     setErrors({});
     setShowForm(true);
@@ -156,6 +165,8 @@ export default function LabDetailPage() {
     if (!form.kode_barang.trim()) errs.kode_barang = "Kode alat wajib diisi";
     if (!form.pembuat_alat.trim()) errs.pembuat_alat = "Pembuat alat wajib diisi";
     if (!form.tanggal_pembelian.trim()) errs.tanggal_pembelian = "Tanggal pembelian wajib diisi";
+    if (!form.tanggal_kalibrasi_terakhir.trim()) errs.tanggal_kalibrasi_terakhir = "Tanggal kalibrasi terakhir wajib diisi";
+    if (!form.tanggal_kalibrasi_berikutnya.trim()) errs.tanggal_kalibrasi_berikutnya = "Tanggal kalibrasi berikutnya wajib diisi";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -168,6 +179,8 @@ export default function LabDetailPage() {
       kode_barang: form.kode_barang.trim(),
       pembuat_alat: form.pembuat_alat.trim(),
       tanggal_pembelian: form.tanggal_pembelian,
+      tanggal_kalibrasi_terakhir: form.tanggal_kalibrasi_terakhir,
+      tanggal_kalibrasi_berikutnya: form.tanggal_kalibrasi_berikutnya,
       laboratory_id: id,
     };
     try {
@@ -249,6 +262,9 @@ export default function LabDetailPage() {
     { key: "kode_barang", header: "Kode Alat", render: (i: Item) => <span className="text-white/50">{i.kode_barang || "—"}</span> },
     { key: "pembuat_alat", header: "Pembuat Alat", render: (i: Item) => <span className="text-white/50">{i.pembuat_alat || "—"}</span> },
     { key: "tanggal_pembelian", header: "Tgl Pembelian", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_pembelian)}</span> },
+    { key: "tanggal_kalibrasi_terakhir", header: "Tgl Kalibrasi Terakhir", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_terakhir)}</span> },
+    { key: "tanggal_kalibrasi_berikutnya", header: "Tgl Kalibrasi Berikutnya", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_berikutnya)}</span> },
+
     {
       key: "status", header: "Inspeksi",
       render: (i: Item) => {
@@ -517,8 +533,8 @@ export default function LabDetailPage() {
               disabled={!exportStatus.canExport || exportLoading}
               title={!exportStatus.canExport ? "Semua inspeksi harus lengkap (6 bulan) untuk export" : "Export semua peralatan ke Excel"}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg ${!exportStatus.canExport || exportLoading
-                  ? 'bg-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-50 shadow-emerald-500/10'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02] shadow-emerald-500/20'
+                ? 'bg-emerald-500/30 text-emerald-300 cursor-not-allowed opacity-50 shadow-emerald-500/10'
+                : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-[1.02] shadow-emerald-500/20'
                 }`}
             >
               {exportLoading ? (
@@ -575,6 +591,16 @@ export default function LabDetailPage() {
                 <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Pembelian</label>
                 <input type="date" value={form.tanggal_pembelian} onChange={(e) => { setForm({ ...form, tanggal_pembelian: e.target.value }); if (errors.tanggal_pembelian) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_pembelian; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/40" />
                 {errors.tanggal_pembelian && <p className="text-xs text-red-400 mt-1">{errors.tanggal_pembelian}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Kalibrasi Terakhir</label>
+                <input type="date" value={form.tanggal_kalibrasi_terakhir} onChange={(e) => { setForm({ ...form, tanggal_kalibrasi_terakhir: e.target.value }); if (errors.tanggal_kalibrasi_terakhir) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_kalibrasi_terakhir; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/40" />
+                {errors.tanggal_kalibrasi_terakhir && <p className="text-xs text-red-400 mt-1">{errors.tanggal_kalibrasi_terakhir}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/60 mb-1">Tanggal Kalibrasi Berikutnya</label>
+                <input type="date" value={form.tanggal_kalibrasi_berikutnya} onChange={(e) => { setForm({ ...form, tanggal_kalibrasi_berikutnya: e.target.value }); if (errors.tanggal_kalibrasi_berikutnya) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_kalibrasi_berikutnya; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/40" />
+                {errors.tanggal_kalibrasi_berikutnya && <p className="text-xs text-red-400 mt-1">{errors.tanggal_kalibrasi_berikutnya}</p>}
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
