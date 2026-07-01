@@ -34,3 +34,8 @@ export async function updateItem(id: number, data: Partial<Item>): Promise<Item>
 export async function deleteItem(id: number): Promise<void> {
   await api.delete(`/items/${id}`);
 }
+
+export async function getCalibrationAlerts() {
+  const res = await api.get("/items/calibration-alerts");
+  return res.data.data || [];
+}

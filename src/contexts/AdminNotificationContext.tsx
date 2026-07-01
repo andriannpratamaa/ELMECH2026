@@ -9,6 +9,7 @@ import {
 
 import { getPendingCategories } from "@/services/criteria";
 import { getPendingReviews } from "@/services/inspections";
+import { getCalibrationAlerts } from "@/services/items";
 
 type AdminNotificationContextType = {
   pendingLabCount: number;
@@ -30,10 +31,12 @@ export function AdminNotificationProvider({
     if (!token) return;
 
     try {
-      const [pendingCats, pendingReviews] = await Promise.all([
-        getPendingCategories(),
-        getPendingReviews(),
-      ]);
+      const [pendingCats, pendingReviews, calibrationAlerts] =
+        await Promise.all([
+          getPendingCategories(),
+          getPendingReviews(),
+          getCalibrationAlerts(),
+        ]);
 
       // Yang dihitung adalah jumlah LAB
       const labMap: Record<number, boolean> = {};
@@ -47,6 +50,12 @@ export function AdminNotificationProvider({
       for (const review of pendingReviews) {
         if (review.laboratory_id) {
           labMap[review.laboratory_id] = true;
+        }
+      }
+
+      for (const item of calibrationAlerts) {
+        if (item.laboratory_id) {
+          labMap[item.laboratory_id] = true;
         }
       }
 

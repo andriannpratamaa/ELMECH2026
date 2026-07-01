@@ -145,7 +145,7 @@ export default function LabDetailPage() {
     setForm({
       nama_barang: item.nama_barang,
       kode_barang: item.kode_barang || "",
-      pembuat_alat: item.pembuat_alat || "",      
+      pembuat_alat: item.pembuat_alat || "",
       tanggal_pembelian:
         item.tanggal_pembelian?.slice(0, 10) || "",
 
@@ -263,8 +263,38 @@ export default function LabDetailPage() {
     { key: "pembuat_alat", header: "Pembuat Alat", render: (i: Item) => <span className="text-white/50">{i.pembuat_alat || "—"}</span> },
     { key: "tanggal_pembelian", header: "Tgl Pembelian", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_pembelian)}</span> },
     { key: "tanggal_kalibrasi_terakhir", header: "Tgl Kalibrasi Terakhir", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_terakhir)}</span> },
-    { key: "tanggal_kalibrasi_berikutnya", header: "Tgl Kalibrasi Berikutnya", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_berikutnya)}</span> },
+    {
+      key: "tanggal_kalibrasi_berikutnya",
+      header: "Tgl Kalibrasi Berikutnya",
+      render: (i: Item) => {
+        const today = new Date().toISOString().split("T")[0];
 
+        const expired =
+          i.tanggal_kalibrasi_berikutnya &&
+          i.tanggal_kalibrasi_berikutnya.slice(0, 10) <= today;
+
+        return (
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                expired
+                  ? "text-red-400 font-medium"
+                  : "text-white/50"
+              }
+            >
+              {formatDate(i.tanggal_kalibrasi_berikutnya)}
+            </span>
+
+            {expired && (
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: "status", header: "Inspeksi",
       render: (i: Item) => {
@@ -310,6 +340,7 @@ export default function LabDetailPage() {
   }
 
   if (!lab) return null;
+
 
   return (
     <div className="space-y-6">

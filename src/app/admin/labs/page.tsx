@@ -13,6 +13,7 @@ import { getPendingCategories, getPendingSubItems } from "@/services/criteria";
 import { getPendingReviews, getInspectionByItemId } from "@/services/inspections";
 import type { Lab, User as UserType } from "@/types/admin";
 import { useAdminNotification } from "@/contexts/AdminNotificationContext";
+import { getCalibrationAlerts } from "@/services/items";
 
 export default function LabsPage() {
   const router = useRouter();
@@ -44,12 +45,20 @@ export default function LabsPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [labData, userData, pendingCats, pendingRev, pendingSub] = await Promise.all([
+      const [
+        labData,
+        userData,
+        pendingCats,
+        pendingRev,
+        pendingSub,
+        calibrationAlerts,
+      ] = await Promise.all([
         getLabs(),
         getUsers(),
         getPendingCategories(),
         getPendingReviews(),
         getPendingSubItems(),
+        getCalibrationAlerts(),
       ]);
       setLabs(labData);
       setAllUsers(userData);
@@ -63,6 +72,12 @@ export default function LabsPage() {
       }
       for (const insp of pendingRev) {
         if (insp.laboratory_id) counts[insp.laboratory_id] = (counts[insp.laboratory_id] || 0) + 1;
+      }
+      for (const item of calibrationAlerts) {
+        if (item.laboratory_id) {
+          counts[item.laboratory_id] =
+            (counts[item.laboratory_id] || 0) + 1;
+        }
       }
       setPendingCounts(counts);
     } catch (err: any) {

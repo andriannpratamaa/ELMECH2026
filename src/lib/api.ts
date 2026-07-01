@@ -25,7 +25,6 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (res) => {
-    console.log(`[API] ${res.config.method?.toUpperCase()} ${res.config.url}`, res.data);
     return res;
   },
   (err) => {
