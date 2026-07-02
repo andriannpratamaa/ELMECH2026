@@ -200,6 +200,11 @@ export async function getInspectionByItemId(
   alasan_penolakan: string | null;
   has_approved_month: boolean;
   filled_months: number;
+  pendingCount: number;
+  hasPending: boolean;
+  hasRejectedCategory: boolean;
+  hasRejectedInspection: boolean;
+
 }> {
   const params = new URLSearchParams();
   if (tahun) params.set('tahun', String(tahun));
@@ -215,6 +220,11 @@ export async function getInspectionByItemId(
     alasan_penolakan: string | null;
     has_approved_month: boolean;
     filled_months: number;
+    pendingCount: number;
+    hasPending: boolean;
+    hasRejectedCategory: boolean;
+    hasRejectedInspection: boolean;
+    needFillNextMonth: boolean;
   }>(`/inspections/by-item/${itemId}${qs ? '?' + qs : ''}`);
   return res.data;
 }

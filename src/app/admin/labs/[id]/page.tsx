@@ -31,7 +31,7 @@ export default function LabDetailPage() {
   const [loading, setLoading] = useState(true);
   const [semesterOptions, setSemesterOptions] = useState<TahunSemester[]>([]);
   const [selectedSemester, setSelectedSemester] = useState<TahunSemester | null>(null);
-  const [itemStatuses, setItemStatuses] = useState<Record<number, { exists: boolean; review_status?: string | null }>>({});
+  const [itemStatuses, setItemStatuses] = useState<Record<number, { exists: boolean; review_status?: string | null; hasPending: boolean }>>({});
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -110,15 +110,23 @@ export default function LabDetailPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
+
     if (!selectedSemester || labItems.length === 0) return;
     const fetchStatuses = async () => {
       const results = await Promise.all(
-        labItems.map((item) =>
-          getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
-            .catch(() => ({ exists: false as const, review_status: null })),
-        ),
+        labItems.map(async (item) => {
+
+          const result = await getInspectionByItemId(
+            item.id,
+            selectedSemester.tahun,
+            selectedSemester.semester
+          );
+
+
+          return result;
+        })
       );
-      const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
+      const statuses: Record<number, { exists: boolean; review_status?: string | null; hasPending: boolean }> = {};
       labItems.forEach((item, i) => { statuses[item.id] = results[i]; });
       setItemStatuses(statuses);
 
@@ -274,7 +282,7 @@ export default function LabDetailPage() {
           i.tanggal_kalibrasi_berikutnya.slice(0, 10) <= today;
 
         return (
-          <div className="flex items-center gap-2">
+          <div className="relative inline-block">
             <span
               className={
                 expired
@@ -286,9 +294,9 @@ export default function LabDetailPage() {
             </span>
 
             {expired && (
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute -top-1.5 -right-2.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
               </span>
             )}
           </div>
@@ -296,28 +304,28 @@ export default function LabDetailPage() {
       },
     },
     {
-      key: "status", header: "Inspeksi",
-      render: (i: Item) => {
-        const s = itemStatuses[i.id];
-        if (!selectedSemester) return <span className="text-xs text-white/30">—</span>;
-        if (!s) return <span className="text-xs text-white/30">Memuat...</span>;
-        if (!s.exists) return <span className="text-xs text-white/30">Belum Ada</span>;
-        if (s.review_status === "APPROVED") return <span className="text-xs text-emerald-400 font-medium">Disetujui</span>;
-        if (s.review_status === "REJECTED") return <span className="text-xs text-red-400 font-medium">Ditolak</span>;
-        return <span className="text-xs text-yellow-400 font-medium">Menunggu</span>;
-      },
-    },
-    {
       key: "actions", header: "Aksi",
       render: (i: Item) => (
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push(`/admin/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`)}
-            className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
-            title="Inspeksi"
-          >
-            <ClipboardCheck className="w-4 h-4" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() =>
+                router.push(
+                  `/admin/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`
+                )
+              }
+              className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
+            >
+              <ClipboardCheck className="w-4 h-4" />
+            </button>
+
+            {(itemStatuses[i.id]?.hasPending) && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
+              </span>
+            )}
+          </div>
           {!readOnly && (
             <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-[#FBBF24] transition-colors"><Pencil className="w-4 h-4" /></button>
           )}

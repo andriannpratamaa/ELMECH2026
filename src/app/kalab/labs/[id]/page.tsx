@@ -35,7 +35,7 @@ export default function KalabLabDetailPage() {
   const [selectedSemester, setSelectedSemester] = useState<TahunSemester | null>(null);
 
   const [itemStatuses, setItemStatuses] = useState<
-    Record<number, { exists: boolean; review_status?: string | null }>
+    Record<number, { exists: boolean; review_status?: string | null; filled_months?: number; hasRejectedCategory?: boolean; hasRejectedInspection?: boolean; needFillNextMonth?: boolean; }>
   >({});
 
   const readOnly =
@@ -131,11 +131,11 @@ export default function KalabLabDetailPage() {
   useEffect(() => {
     if (!selectedSemester || labItems.length === 0) return;
     const fetchStatuses = async () => {
-      const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
+      const statuses: Record<number, { exists: boolean; review_status?: string | null; filled_months?: number; hasRejectedCategory?: boolean; hasRejectedInspection?: boolean; needFillNextMonth?: boolean; }> = {};
       const results = await Promise.all(
         labItems.map((item) =>
           getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
-            .catch(() => ({ exists: false as const, review_status: null })),
+            .catch(() => ({ exists: false as const, review_status: null, filled_months: 0, hasRejectedCategory: false, hasRejectedInspection: false, needFillNextMonth: false })),
         ),
       );
       labItems.forEach((item, i) => {
@@ -291,36 +291,56 @@ export default function KalabLabDetailPage() {
     { key: "tanggal_kalibrasi_terakhir", header: "Tgl Kalibrasi Terakhir", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_terakhir)}</span> },
     { key: "tanggal_kalibrasi_berikutnya", header: "Tgl Kalibrasi Berikutnya", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_berikutnya)}</span> },
     {
-      key: "status", header: "Inspeksi",
+      key: "actions",
+      header: "Aksi",
       render: (i: Item) => {
         const s = itemStatuses[i.id];
-        if (!selectedSemester) return <span className="text-xs text-white/30">—</span>;
-        if (!s) return <span className="text-xs text-white/30">Memuat...</span>;
-        if (!s.exists) return <span className="text-xs text-white/30">Belum Ada</span>;
-        if (s.review_status === "APPROVED") return <span className="text-xs text-emerald-400 font-medium">Disetujui</span>;
-        if (s.review_status === "REJECTED") return <span className="text-xs text-red-400 font-medium">Ditolak</span>;
-        return <span className="text-xs text-yellow-400 font-medium">Menunggu</span>;
+
+        return (
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() =>
+                  router.push(
+                    `/kalab/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`
+                  )
+                }
+                className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
+                title="Inspeksi"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+              </button>
+
+              {s?.exists &&
+                (
+                  s?.needFillNextMonth ||
+                  s.hasRejectedCategory ||
+                  s.hasRejectedInspection
+                ) && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                )}
+            </div>
+
+            {!readOnly && (
+              <button
+                onClick={() => openEdit(i)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+
+            {!readOnly && (
+              <button
+                onClick={() => setDeleteId(i.id)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-red-400 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        );
       },
-    },
-    {
-      key: "actions", header: "Aksi",
-      render: (i: Item) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push(`/kalab/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`)}
-            className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
-            title="Inspeksi"
-          >
-            <ClipboardCheck className="w-4 h-4" />
-          </button>
-          {!readOnly && (
-            <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"><Pencil className="w-4 h-4" /></button>
-          )}
-          {!readOnly && (
-            <button onClick={() => setDeleteId(i.id)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
-          )}
-        </div>
-      ),
     },
   ];
 
@@ -625,7 +645,6 @@ export default function KalabLabDetailPage() {
                 <input type="date" value={form.tanggal_kalibrasi_berikutnya} onChange={(e) => { setForm({ ...form, tanggal_kalibrasi_berikutnya: e.target.value }); if (errors.tanggal_kalibrasi_berikutnya) setErrors((prev) => { const n = { ...prev }; delete n.tanggal_kalibrasi_berikutnya; return n; }); }} className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/40" />
                 {errors.tanggal_kalibrasi_berikutnya && <p className="text-xs text-red-400 mt-1">{errors.tanggal_kalibrasi_berikutnya}</p>}
               </div>
-
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button onClick={() => setShowForm(false)} disabled={saving} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${highlightCancel ? "bg-red-500 text-white scale-105 shadow-lg shadow-red-500/30" : "text-white/70 hover:text-white hover:bg-white/5"}`} >Batal</button>
