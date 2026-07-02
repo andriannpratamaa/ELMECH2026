@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import PlpSidebar from "@/components/admin/PlpSidebar";
 import RoleGuard from "@/components/auth/RoleGuard";
 import PlpTopbar from "@/components/admin/PlpTopbar";
+import { PlpNotificationProvider } from "@/contexts/PlpNotificationContext";
 
 function PlpWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,21 +53,25 @@ export default function PlpLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <RoleGuard roles={["plp"]}>
-          <div className="min-h-screen bg-[#0F172A] text-white">
-    <PlpSidebar
-      open={sidebarOpen}
-      onClose={() => setSidebarOpen(false)}
-    />
+<RoleGuard roles={["plp"]}>
+    <PlpNotificationProvider>
+        <div className="min-h-screen bg-[#0F172A] text-white">
 
-    <PlpTopbar
-      onMenuClick={() => setSidebarOpen(true)}
-    />
+            <PlpSidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+            />
 
-    <main className="min-h-screen pt-20 lg:ml-60 px-4 sm:px-6 lg:px-8 pb-6">
-      {children}
-    </main>
-  </div>
-    </RoleGuard>
+            <PlpTopbar
+                onMenuClick={() => setSidebarOpen(true)}
+            />
+
+            <main className="min-h-screen pt-20 lg:ml-60 px-4 sm:px-6 lg:px-8 pb-6">
+                {children}
+            </main>
+
+        </div>
+    </PlpNotificationProvider>
+</RoleGuard>
   );
 }

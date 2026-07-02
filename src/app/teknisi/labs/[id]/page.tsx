@@ -35,7 +35,14 @@ export default function KalabLabDetailPage() {
     const [selectedSemester, setSelectedSemester] = useState<TahunSemester | null>(null);
 
     const [itemStatuses, setItemStatuses] = useState<
-        Record<number, { exists: boolean; review_status?: string | null }>
+        Record<number, {
+            exists: boolean;
+            review_status?: string | null;
+            hasPending?: boolean;
+            hasRejectedCategory?: boolean;
+            hasRejectedInspection?: boolean;
+            needFillNextMonth?: boolean;
+        }>
     >({});
 
     const readOnly =
@@ -150,11 +157,11 @@ export default function KalabLabDetailPage() {
     useEffect(() => {
         if (!selectedSemester || labItems.length === 0) return;
         const fetchStatuses = async () => {
-            const statuses: Record<number, { exists: boolean; review_status?: string | null }> = {};
+            const statuses: Record<number, { exists: boolean; review_status?: string | null; hasRejectedCategory?: boolean; hasRejectedInspection?: boolean; needFillNextMonth?: boolean }> = {};
             const results = await Promise.all(
                 labItems.map((item) =>
                     getInspectionByItemId(item.id, selectedSemester.tahun, selectedSemester.semester)
-                        .catch(() => ({ exists: false as const, review_status: null })),
+                        .catch(() => ({ exists: false as const, review_status: null, hasRejectedCategory: false, hasRejectedInspection: false, needFillNextMonth: false })),
                 ),
             );
             labItems.forEach((item, i) => {
@@ -207,7 +214,6 @@ export default function KalabLabDetailPage() {
         if (!form.tanggal_pembelian.trim()) errs.tanggal_pembelian = "Tanggal pembelian wajib diisi";
         if (!form.tanggal_kalibrasi_terakhir.trim()) errs.tanggal_kalibrasi_terakhir = "Tanggal kalibrasi terakhir wajib diisi";
         if (!form.tanggal_kalibrasi_berikutnya.trim()) errs.tanggal_kalibrasi_berikutnya = "Tanggal kalibrasi berikutnya wajib diisi";
-
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -311,36 +317,59 @@ export default function KalabLabDetailPage() {
         { key: "tanggal_kalibrasi_terakhir", header: "Tgl Kalibrasi Terakhir", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_terakhir)}</span> },
         { key: "tanggal_kalibrasi_berikutnya", header: "Tgl Kalibrasi Berikutnya", render: (i: Item) => <span className="text-white/50">{formatDate(i.tanggal_kalibrasi_berikutnya)}</span> },
         {
-            key: "status", header: "Inspeksi",
+            key: "actions", header: "Aksi",
             render: (i: Item) => {
                 const s = itemStatuses[i.id];
-                if (!selectedSemester) return <span className="text-xs text-white/30">—</span>;
-                if (!s) return <span className="text-xs text-white/30">Memuat...</span>;
-                if (!s.exists) return <span className="text-xs text-white/30">Belum Ada</span>;
-                if (s.review_status === "APPROVED") return <span className="text-xs text-emerald-400 font-medium">Disetujui</span>;
-                if (s.review_status === "REJECTED") return <span className="text-xs text-red-400 font-medium">Ditolak</span>;
-                return <span className="text-xs text-yellow-400 font-medium">Menunggu</span>;
-            },
-        },
-        {
-            key: "actions", header: "Aksi",
-            render: (i: Item) => (
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => router.push(`/teknisi/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`)}
-                        className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
-                        title="Inspeksi"
-                    >
-                        <ClipboardCheck className="w-4 h-4" />
-                    </button>
-                    {!readOnly && (
-                        <button onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"><Pencil className="w-4 h-4" /></button>
-                    )}
-                    {!readOnly && (
-                        <button onClick={() => setDeleteId(i.id)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    )}
-                </div>
-            ),
+
+                return (
+                    <div className="flex items-center gap-2">
+
+                        <div className="relative">
+                            <button
+                                onClick={() =>
+                                    router.push(
+                                        `/teknisi/labs/${id}/inspeksi/${i.id}?tahun=${selectedSemester?.tahun}&semester=${selectedSemester?.semester}`
+                                    )
+                                }
+                                className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-white/50 hover:text-emerald-400 transition-colors"
+                                title="Inspeksi"
+                            >
+                                <ClipboardCheck className="w-4 h-4" />
+                            </button>
+
+                            {s?.exists &&
+                                (
+                                    s?.needFillNextMonth ||
+                                    s.hasRejectedCategory ||
+                                    s.hasRejectedInspection
+                                ) && (
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                                    </span>                                )}
+                        </div>
+
+                        {!readOnly && (
+                            <button
+                                onClick={() => openEdit(i)}
+                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-blue-400 transition-colors"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                        )}
+
+                        {!readOnly && (
+                            <button
+                                onClick={() => setDeleteId(i.id)}
+                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/50 hover:text-red-400 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+
+                    </div>
+                );
+            }
         },
     ];
 

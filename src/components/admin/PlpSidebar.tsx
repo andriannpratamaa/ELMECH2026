@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Package, LogOut, X, GraduationCap, UserCircle,
 } from "lucide-react";
 import { removeToken } from "@/services/auth";
+import { usePlpNotification } from "@/contexts/PlpNotificationContext";
 
 const MENU = [
   {
@@ -44,6 +45,7 @@ const MENU = [
 export default function KalabSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { pendingLabCount } = usePlpNotification();
 
   const handleLogout = () => {
     removeToken();
@@ -54,6 +56,7 @@ export default function KalabSidebar({ open, onClose }: { open: boolean; onClose
     if (href === "/plp/dashboard") return pathname === href;
     return pathname.startsWith(href);
   };
+
 
   const sidebar = (
     <aside className="h-full flex flex-col bg-[#0F172A] border-r border-white/5">
@@ -87,13 +90,19 @@ export default function KalabSidebar({ open, onClose }: { open: boolean; onClose
                     href={item.href}
                     onClick={onClose}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${active
-                        ? "bg-blue-500/10 text-blue-400"
-                        : "text-white/50 hover:text-white hover:bg-white/5"
+                      ? "bg-blue-500/10 text-blue-400"
+                      : "text-white/50 hover:text-white hover:bg-white/5"
                       }`}
                   >
                     <Icon className="w-4.5 h-4.5 flex-shrink-0" strokeWidth={1.5} />
 
                     <span className="flex-1">{item.label}</span>
+
+                    {item.href === "/plp/labs" && pendingLabCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-red-500/30">
+                        {pendingLabCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
